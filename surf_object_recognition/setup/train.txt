@@ -1,0 +1,13 @@
+Upright false
+Octaves 5
+Intervals 4
+InitSample 2
+Threshold 0.002
+AutoLevels false
+GenerateHtml true
+RoboticsLabLogo2.jpg
+USCBRoboticsLab
+OpenCVLogo.jpg
+OpenCV
+rosLogo.jpg
+ROS
