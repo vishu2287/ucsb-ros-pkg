@@ -1,0 +1,8 @@
+<!-- launch a compressed webcam image publisher-->
+<launch>
+  <!-- Sets the compression -->
+  <param name="/compressed_listener/image_transport" value="compressed"/>
+  <param name="camera/image/compressed_image_transport_jpeg_quality" value="70"/>
+
+  <node pkg="surf_object_recognition" type="imagePublisher" name="webcam_publisher"/>
+</launch>

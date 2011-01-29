@@ -1,0 +1,17 @@
+<package>
+  <description brief="surf_object_recognition">
+
+     surf_test
+
+  </description>
+  <author>Paul Filitchkin</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/</url>
+  <depend package="image_transport"/>
+  <depend package="opencv2"/>
+  <depend package="cv_bridge"/>
+
+</package>
+
+

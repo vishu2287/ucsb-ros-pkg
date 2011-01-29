@@ -1,0 +1,16 @@
+<!-- launch an image publisher and subscriber -->
+<launch>
+  <!-- Sets the compression -->
+  <param name="/compressed_listener/image_transport" value="compressed"/>
+  <param name="camera/image/compressed_image_transport_jpeg_quality" value="70"/>
+
+  <node pkg="surf_object_recognition" type="imagePublisher" name="webcam_publisher"/>
+  
+  <!-- Run the compressed image listener and object recognition database -->
+  <node pkg="surf_object_recognition" type="surfSubscriber" name="compressed_listener">
+    <param name="setup_path"    value="$(find surf_object_recognition)/setup/"/>
+    <param name="image_path"    value="$(find surf_object_recognition)/images/"/>
+    <param name="database_path" value="$(find surf_object_recognition)/database/"/>
+    <param name="html_path"     value="$(find surf_object_recognition)/html/"/>
+  </node>
+</launch>

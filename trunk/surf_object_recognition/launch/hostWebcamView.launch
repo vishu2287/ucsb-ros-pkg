@@ -1,0 +1,9 @@
+<!-- launch an image publisher and subscriber -->
+<launch>
+  <node pkg="surf_object_recognition" type="surfSubscriber" name="compressed_listener">
+    <param name="setup_path"    value="$(find surf_object_recognition)/setup/"/>
+    <param name="image_path"    value="$(find surf_object_recognition)/images/"/>
+    <param name="database_path" value="$(find surf_object_recognition/database/"/>
+    <param name="html_path"     value="$(find surf_object_recognition)/html/"/>
+  </node>
+</launch>
