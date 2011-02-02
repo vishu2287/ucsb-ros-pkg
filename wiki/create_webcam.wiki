@@ -3,7 +3,7 @@
 
 = Description =
 
-This package enables users to remotely view/transmit webcam images and control an iRobot Create with a joystick.  Webcam images can be viewed locally or they can be compressed and transmitted over the network.  A teleoperation node is included to provide teleoperation using the create_node package.  
+This package enables users to remotely view/transmit webcam images and control an iRobot Create with a joystick.  Webcam images can be viewed locally or they can be compressed and transmitted over the network.  A teleoperation node is included to provide joystick control using the create_node package.  
 
 
 = Details =
