@@ -1,0 +1,14 @@
+#summary One-sentence summary of this page.
+#labels iRobotCreate,webcam,teleoperation
+
+= Description =
+
+This package enables users to remotely view/transmit webcam images and control an iRobot Create with a joystick.  Webcam images can be viewed locally or they can be compressed and transmitted over the network.  A teleoperation node is included to provide teleoperation using the create_node package.  
+
+
+= Details =
+
+Add your content here.  Format your content with:
+  * Text in *bold* or _italic_
+  * Headings, paragraphs, and lists
+  * Automatic links to other wiki pages
