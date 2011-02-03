@@ -1,4 +1,4 @@
-<!-- Publish an image with no compresion and subscriber to it locally -->
+<!-- Publish an image with no compression and subscribe to it locally -->
 <launch>
   <node pkg="create_webcam" type="image_publisher" name="image_publisher" args="$(find create_webcam)/ros_org.png"/>
   <node pkg="create_webcam" type="subscriber" name="subscriber"/>
