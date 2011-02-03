@@ -1,0 +1,36 @@
+<!-- Test compressed image transmission and teleoperation on the same machine-->
+<launch>
+
+  <!-- Sets the compression -->
+  <param name="/compressed_listener/image_transport" value="compressed"/>
+  <param name="camera/image/compressed_image_transport_jpeg_quality" value="50"/>
+  <node pkg="create_webcam" type="webcam_publisher" name="webcam_publisher"/>
+
+  <!-- This is needed for Create_node -->
+  <param name="robot_description" command="$(find xacro)/xacro.py '$(find create_urdf)/urdf/create.urdf.xacro'" />
+
+  <!-- Create state publisher -->
+  <node pkg="robot_state_publisher" type="state_publisher" name="robot_state_publisher" output="screen">
+    <param name="publish_frequency" type="double" value="30.0" />
+    <!--param name="tf_prefix" type="string" value="" /-->
+  </node>
+
+  <!-- Create Driver -->
+  <node pkg="create_node" type="create_node.py" name="create_node" >
+    <param name="bonus" value="false" />
+    <param name="~port" value="/dev/ttyUSB0" />
+  </node>
+
+  <!-- Run the joystick node -->
+  <node pkg="joy" type="joy_node" name="joystick">
+    <!-- Set the joystick device name -->
+		<param name="dev" value="/dev/input/js0"/>
+  </node>
+
+  <!-- Joystick to Create Driver -->
+  <node pkg="teleop" type="create_teleop" name="create_teleop" />
+
+
+  <node pkg="create_webcam" type="subscriber" name="compressed_listener"/>
+
+</launch>

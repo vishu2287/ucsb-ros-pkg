@@ -1,0 +1,7 @@
+<!-- Launch a compressed image publisher on the robot-->
+<launch>
+  <!-- Sets the compression -->
+  <param name="/compressed_listener/image_transport" value="compressed"/>
+  <param name="camera/image/compressed_image_transport_jpeg_quality" value="50"/>
+  <node pkg="create_webcam" type="webcam_publisher" name="webcam_publisher"/>
+</launch>

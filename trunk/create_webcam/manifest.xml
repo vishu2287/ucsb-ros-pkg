@@ -1,0 +1,20 @@
+<package>
+  <description brief="create_webcam">
+
+This package enables users to remotely view/transmit webcam images and control an iRobot Create with a joystick.  Webcam images can be viewed locally or they can be compressed and transmitted over the network.  A teleoperation node is included to provide joystick control using the create_node package.  
+
+  </description>
+  <author>Paul Filitchkin</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>https://code.google.com/p/ucsb-ros-pkg/wiki/create_webcam</url>
+  <depend package="image_transport"/>
+  <depend package="opencv2"/>
+  <depend package="cv_bridge"/>
+  <depend package="create_node"/>
+  <depend package="joy"/>
+  <depend package="teleop"/>
+
+</package>
+
+
