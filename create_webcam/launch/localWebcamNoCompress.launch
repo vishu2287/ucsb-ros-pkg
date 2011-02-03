@@ -1,0 +1,5 @@
+<!-- launch an image publisher and subscriber -->
+<launch>
+  <node pkg="webcam_test" type="webcam_publisher" name="webcam_publisher"/>
+  <node pkg="webcam_test" type="subscriber" name="subscriber"/>
+</launch>

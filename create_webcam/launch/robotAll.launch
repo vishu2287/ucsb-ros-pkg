@@ -1,0 +1,23 @@
+<!-- Launch all of the necessary nodes for remote webcam viewing and teleoperation on the robot platform -->
+<launch>
+  <!-- Sets the compression -->
+  <param name="/compressed_listener/image_transport" value="compressed"/>
+  <param name="camera/image/compressed_image_transport_jpeg_quality" value="50"/>
+  <node pkg="create_webcam" type="webcam_publisher" name="webcam_publisher"/>
+
+  <!-- This is needed for Create_node -->
+  <param name="robot_description" command="$(find xacro)/xacro.py '$(find create_urdf)/urdf/create.urdf.xacro'" />
+
+  <!-- Create state publisher -->
+  <node pkg="robot_state_publisher" type="state_publisher" name="robot_state_publisher" output="screen">
+    <param name="publish_frequency" type="double" value="30.0" />
+    <!--param name="tf_prefix" type="string" value="" /-->
+  </node>
+
+  <!-- Create Driver -->
+  <node pkg="create_node" type="create_node.py" name="create_node" >
+    <param name="bonus" value="false" />
+    <param name="~port" value="/dev/ttyUSB0" />
+  </node>
+
+</launch>

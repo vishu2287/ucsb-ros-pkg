@@ -1,0 +1,4 @@
+<!-- Launch an image subscriber for viewing compressed webcam images on the host machine -->
+<launch>
+  <node pkg="create_webcam" type="subscriber" name="compressed_listener"/>
+</launch>

@@ -1,0 +1,14 @@
+<!-- Launch an image subscriber and joystick controller on the host machine -->
+<launch>
+  <node pkg="create_webcam" type="subscriber" name="compressed_listener"/>
+
+  <!-- Run the joystick node -->
+  <node pkg="joy" type="joy_node" name="joystick">
+    <!-- Set the joystick device name -->
+		<param name="dev" value="/dev/input/js0"/>
+  </node>
+
+  <!-- Joystick to Create Driver -->
+  <node pkg="teleop" type="create_teleop" name="create_teleop" />
+
+</launch>
