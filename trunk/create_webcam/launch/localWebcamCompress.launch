@@ -1,4 +1,4 @@
-<!-- launch an image publisher and subscriber -->
+<!-- Publish webcam images with compression and subscribe to them locally -->
 <launch>
   <!-- Sets the compression -->
   <param name="/compressed_listener/image_transport" value="compressed"/>
