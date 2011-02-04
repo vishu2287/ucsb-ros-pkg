@@ -17,7 +17,10 @@ This first test implements a simple bump bot where the Create simply drives forw
   * geometry_msgs
 
 == Getting started ==
-Checkout the ucsb-ros-pkg repository as instructed on the project home page build this project:
+
+Make sure you have all of the required Kinect packages installed for ROS.  The ROS [http://www.ros.org/wiki/kinect Kinect page] is an excellent resource.  
+
+Next if you have not done so already checkout the ucsb-ros-pkg repository as instructed on the project home page build this project:
 {{{
 roscd create_kinect
 rosmake
