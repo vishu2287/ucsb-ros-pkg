@@ -1,0 +1,26 @@
+#summary Collection of software on the UCSB Create + Kinect platform
+
+== Description ==
+
+The first test implements a simple bump bot structure where the Create simply drives forward and try to avoid obstacles.
+----
+<wiki:video url="http://www.youtube.com/watch?v=pM_MExbug-s"/>
+----
+== Dependencies ==
+  * [http://www.ros.org/wiki/create_node create_node]
+  * std_msgs
+  * roscpp
+  * pcl
+  * pcl_ros
+  * pcl_visualization
+  * geometry_msgs
+
+== Getting started ==
+Checkout the ucsb-ros-pkg repository as instructed on the project home page build this project:
+{{{
+roscd create_kinect
+rosmake
+}}}
+
+== Launch files ==
+ * *firstTest.launch* - Launch a basic bump bot first test with the Kinect mounted on the Create
