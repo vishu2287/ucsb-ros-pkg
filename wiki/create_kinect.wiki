@@ -1,4 +1,5 @@
 #summary Collection of software on the UCSB Create + Kinect platform
+#labels iRobotCreate,Kinect
 
 == Description ==
 
