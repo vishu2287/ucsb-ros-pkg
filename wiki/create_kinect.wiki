@@ -3,7 +3,7 @@
 
 == Description ==
 
-The first test implements a simple bump bot structure where the Create simply drives forward and try to avoid obstacles.
+This first test implements a simple bump bot where the Create simply drives forward and try to avoid obstacles.  Much more to come from this project.  
 ----
 <wiki:video url="http://www.youtube.com/watch?v=pM_MExbug-s"/>
 ----
@@ -21,6 +21,11 @@ Checkout the ucsb-ros-pkg repository as instructed on the project home page buil
 {{{
 roscd create_kinect
 rosmake
+}}}
+To run the basic test
+{{{
+roscd create_kinect
+roslaunch ./launch/firstTest.launch
 }}}
 
 == Launch files ==
