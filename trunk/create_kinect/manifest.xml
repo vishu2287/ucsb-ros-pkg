@@ -1,0 +1,22 @@
+<package>
+  <description brief="create_kinect">
+
+This first test implements a simple bump bot where the Create simply drives forward and try to avoid obstacles.
+
+  </description>
+  <author>Paul Filitchkin and Brian Satzinger</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>https://code.google.com/p/ucsb-ros-pkg/wiki/create_kinect</url>
+  <depend package="std_msgs"/>
+  <depend package="sensor_msgs"/>
+  <depend package="roscpp"/>
+  <depend package="pcl"/>
+  <depend package="pcl_ros"/>
+  <depend package="pcl_visualization"/>
+  <depend package="geometry_msgs"/>
+  <depend package="create_node"/>
+
+</package>
+
+
