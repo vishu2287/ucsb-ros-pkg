@@ -20,12 +20,18 @@ This first test implements a simple bump bot where the Create simply drives forw
 
 Make sure you have all of the required Kinect packages installed for ROS.  The ROS [http://www.ros.org/wiki/kinect Kinect page] is an excellent resource.  
 
-Next if you have not done so already checkout the ucsb-ros-pkg repository as instructed on the project home page build this project:
+Next if you have not done so already checkout the ucsb-ros-pkg repository as instructed on the main page and build the create_kinect project:
 {{{
 roscd create_kinect
 rosmake
 }}}
-To run the basic test
+To run the basic test open up two command prompts and in the first run:
+{{{
+roslaunch kinect_camera kinect_with_tf.launch
+}}}
+
+If you see an error then check this [page http://www.ros.org/wiki/kinect/Tutorials/Getting%20Started] to make sure everything is set up properly.  
+In the second prompt run:
 {{{
 roscd create_kinect
 roslaunch ./launch/firstTest.launch
