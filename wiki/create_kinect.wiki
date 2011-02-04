@@ -30,7 +30,7 @@ To run the basic test open up two command prompts and in the first run:
 roslaunch kinect_camera kinect_with_tf.launch
 }}}
 
-If you see an error then check this [page http://www.ros.org/wiki/kinect/Tutorials/Getting%20Started] to make sure everything is set up properly.  
+If you see an error then check this [http://www.ros.org/wiki/kinect/Tutorials/Getting%20Started page] to make sure everything is set up properly.  
 In the second prompt run:
 {{{
 roscd create_kinect
