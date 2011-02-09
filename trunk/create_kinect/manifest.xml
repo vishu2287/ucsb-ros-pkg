@@ -1,7 +1,7 @@
 <package>
   <description brief="create_kinect">
 
-This first test implements a simple bump bot where the Create simply drives forward and try to avoid obstacles.
+This first test implements a simple bump bot where the Create drives forward while avoiding obstacles
 
   </description>
   <author>Paul Filitchkin and Brian Satzinger</author>
