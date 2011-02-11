@@ -1,5 +1,5 @@
 //=================================================================================================
-// Copyright (c) 2011, Paul Filitchkin
+// Copyright (c) 2011, Paul Filitchkin, Brian Satzinger
 // All rights reserved.
 
 // Redistribution and use in source and binary forms, with or without
@@ -67,7 +67,6 @@ boost::mutex m;
 #define ZMIN   -1.0f
 #define ZMAX   1.0f
 
-
 void cloud_cb (const sensor_msgs::PointCloud2ConstPtr& cloud)
 {
   /*
@@ -82,14 +81,33 @@ void cloud_cb (const sensor_msgs::PointCloud2ConstPtr& cloud)
 
 int main (int argc, char** argv)
 {
-  ros::init (argc, argv, "create_kinect_nav");
+  ros::init (argc, argv, "first_test");
   ros::NodeHandle nh;
-  
-  
-  ros::Publisher velPub;
-  
-  velPub = nh.advertise<geometry_msgs::Twist>("create_node/cmd_vel", 1);
-  
+  ros::Publisher velPub; // Create publisher
+
+  //Do not send commands to the Create by default
+  bool driveCreate = false;
+  bool pclVisualizer = false;
+
+  if (nh.getParam("/first_test/drive_create", driveCreate))
+  {
+    if (driveCreate)
+    {
+      velPub = nh.advertise<geometry_msgs::Twist>("create_node/cmd_vel", 1);
+    }
+  }
+
+  /*
+  if (nh.getParam("/first_test/pcl_visualizer", pclVisualizer))
+  {
+    if (pclVisualizer)
+    {
+    }
+  }
+  */
+
+  pcl_visualization::PCLVisualizer p(argc, argv, "create_kinect_nav_viewer");
+
   // Get the queue size from the command line
   int queue_size = 1;
   parse_argument (argc, argv, "-qsize", queue_size);
@@ -102,7 +120,8 @@ int main (int argc, char** argv)
   // Create a ROS subscriber
   ros::Subscriber sub = nh.subscribe ("/kinect/depth/points2", queue_size, cloud_cb);
 
-  pcl_visualization::PCLVisualizer p (argc, argv, "create_kinect_nav_viewer");
+
+
   pcl::PointCloud<Point> cloud_xyz;
   ColorHandlerPtr color_handler;
 
@@ -121,7 +140,7 @@ int main (int argc, char** argv)
       continue;
 
     p.removePointCloud("cloud");
-    
+
     // Convert to PointCloud<T>
     m.lock();
     {
@@ -135,14 +154,13 @@ int main (int argc, char** argv)
       int rightCnt = 0;
       int total = 0;
 
-      for (pcl::PointCloud<Point>::const_iterator it = cloud_xyz.begin(); it != cloud_xyz.end(); ++it)
+      for (pcl::PointCloud<Point>::const_iterator it = cloud_xyz.begin();
+          it != cloud_xyz.end(); ++it)
       {
-        
         float x = (*it).x;
         float y = (*it).y;
         float z = (*it).z;
-        
-        
+
         // Cut out points above and below vertical threshold
         if ((y < YMAX) && (y > YMIN))
         {
@@ -165,30 +183,34 @@ int main (int argc, char** argv)
           total++;
         }
       }
-      
-      stringstream ss;
-      ss << "left: " << leftCnt << " right: " << rightCnt << " total: " << total << "\n";
-      ROS_INFO(ss.str().c_str());
-      
-      float rFudgeFactor = 1.0f;
-      float lFudgeFactor = rFudgeFactor;
-      
-      geometry_msgs::Twist twist;
-	    geometry_msgs::Vector3 twistLinear;
-	    geometry_msgs::Vector3 twistAngular;
-	    twistLinear.x = 0.1;
-	    twistLinear.y = 0;
-	    twistLinear.z = 0;
-	
-	    twistAngular.x = 0;
-	    twistAngular.y = 0;
-	    twistAngular.z = rFudgeFactor*(float)rightCnt/(float)total - lFudgeFactor*(float)leftCnt/(float)total;
-	
-	    twist.linear  = twistLinear;
-	    twist.angular = twistAngular;
-	
-	    velPub.publish(twist);
-	
+
+      //stringstream ss;
+      //ss << "left: " << leftCnt << " right: " << rightCnt << " total: " << total << "\n";
+      //ROS_INFO(ss.str().c_str());
+
+      if (driveCreate)
+      {
+        float rFudgeFactor = 1.0f;
+        float lFudgeFactor = rFudgeFactor;
+
+        geometry_msgs::Twist twist;
+        geometry_msgs::Vector3 twistLinear;
+        geometry_msgs::Vector3 twistAngular;
+        twistLinear.x = 0.1;
+        twistLinear.y = 0;
+        twistLinear.z = 0;
+
+        twistAngular.x = 0;
+        twistAngular.y = 0;
+        twistAngular.z =
+            rFudgeFactor*(float)rightCnt/(float)total - lFudgeFactor*(float)leftCnt/(float)total;
+
+        twist.linear  = twistLinear;
+        twist.angular = twistAngular;
+
+        velPub.publish(twist);
+      }
+
       /*
       NEED TO USE THIS BUT NOT ENOUGH TIME TO UNDERSTAND pcl::PointIndices
       
@@ -209,8 +231,8 @@ int main (int argc, char** argv)
       color_handler.reset(
         new pcl_visualization::PointCloudColorHandlerRGBField<sensor_msgs::PointCloud2> 
         (displayCloud));
-        
-      p.addPointCloud( fullSlice, color_handler, "cloud" );
+
+      p.addPointCloud(fullSlice, color_handler, "cloud");
 
       // Add a color handler for each field
       for (size_t i = 0; i < displayCloud.fields.size(); ++i)
@@ -231,4 +253,3 @@ int main (int argc, char** argv)
 
   return (0);
 }
-

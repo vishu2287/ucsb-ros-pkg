@@ -15,6 +15,6 @@
 
   <!-- Launch the first test program -->
   <node pkg="create_kinect" type="first_test" name="first_test" >
-  </node> 
-  
+    <param name="drive_create" value="true"/>
+  </node>
 </launch>
