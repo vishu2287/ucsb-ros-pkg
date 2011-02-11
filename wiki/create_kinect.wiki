@@ -3,7 +3,7 @@
 
 == Description ==
 
-This first test implements a simple bump bot where the Create simply drives forward and try to avoid obstacles.  Much more to come from this project.  
+This first test implements a simple bump bot where the Create drives forward while avoiding obstacles.  Much more to come from this project.  
 ----
 <wiki:video url="http://www.youtube.com/watch?v=pM_MExbug-s"/>
 ----
