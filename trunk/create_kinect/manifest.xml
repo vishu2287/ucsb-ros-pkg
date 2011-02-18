@@ -13,7 +13,7 @@ This first test implements a simple bump bot where the Create drives forward whi
   <depend package="roscpp"/>
   <depend package="pcl"/>
   <depend package="pcl_ros"/>
-  <depend package="pcl_visualization"/>
+  <depend package="visualization_msgs"/>
   <depend package="geometry_msgs"/>
   <depend package="create_node"/>
 
