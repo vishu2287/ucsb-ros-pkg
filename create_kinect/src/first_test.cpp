@@ -34,221 +34,349 @@
 #include <pcl/io/pcd_io.h>
 #include <pcl/point_types.h>
 #include <pcl_ros/subscriber.h>
-#include <pcl_visualization/pcl_visualizer.h>
-
-#include <terminal_tools/print.h>
-#include <terminal_tools/parse.h>
 
 // iRobot Create control
 #include <geometry_msgs/Twist.h>
+
+#include <visualization_msgs/Marker.h>
 
 #include <iostream>
 #include <stdio.h>
 #include <iterator>
 
 using namespace std;
-using terminal_tools::print_highlight;
-using terminal_tools::parse_argument;
 
-typedef pcl::PointXYZ Point;
-typedef pcl_visualization::PointCloudColorHandler<sensor_msgs::PointCloud2> ColorHandler;
-typedef ColorHandler::Ptr ColorHandlerPtr;
-typedef ColorHandler::ConstPtr ColorHandlerConstPtr;
+//Typedefs
+typedef pcl::PointXYZRGB PointT;
+typedef pcl::PointCloud<PointT> CloudT;
 
 sensor_msgs::PointCloud2ConstPtr cloud_, cloud_old_;
 boost::mutex m;
 
-#define YMIN -0.25f
-#define YMAX   0.9f
-#define XLMIN -1.0f
-#define XLMAX -0.2f
-#define XRMIN  0.2f
-#define XRMAX  1.0f
-#define ZMIN   -1.0f
-#define ZMAX   1.0f
+struct SRanges
+{
+  double yMin;
+  double yMax;
+  double zMin;
+  double zMax;
+  double xRMin;
+  double xLMin;
+  double xRMax;
+  double xLMax;
+};
 
+//==================================================================================================
+// Description:
+//   This callback intercepts the message from the ROS Kinect node
+//==================================================================================================
 void cloud_cb (const sensor_msgs::PointCloud2ConstPtr& cloud)
 {
-  /*
-  ROS_INFO ("PointCloud with %d data points (%s), stamp %f, and frame %s.",
-             cloud->width * cloud->height, pcl::getFieldsList (*cloud).c_str (), 
-             cloud->header.stamp.toSec (), cloud->header.frame_id.c_str ());
-  */
   m.lock();
   cloud_ = cloud;
   m.unlock();
 }
 
+/*
+#define XLMIN -1.0f
+#define XLMAX -0.2f
+#define XRMIN  0.2f
+#define XRMAX  1.0f
+#define YMIN -0.25f
+#define YMAX   0.9f
+#define ZMIN  -1.0f
+#define ZMAX   1.0f
+*/
+
+//==================================================================================================
+//==================================================================================================
+void defaultRanges(struct SRanges& r)
+{
+  r.xLMin = -1.0f;
+  r.xLMax = -0.2f;
+  r.xRMin =  0.2f;
+  r.xRMax =  1.0f;
+  r.yMin  = -0.25f;
+  r.yMax  =  0.9f;
+  r.zMin  = -1.0f;
+  r.zMax  =  4.0f;
+}
+
+//==================================================================================================
+//==================================================================================================
+void readRangeParameters(ros::NodeHandle& nh, struct SRanges& r)
+{
+
+  double val;
+
+  if (nh.getParam("/first_test/xl_min", val)) r.xLMin = val;
+  if (nh.getParam("/first_test/xl_max", val)) r.xLMax = val;
+  if (nh.getParam("/first_test/xr_min", val)) r.xRMax = val;
+  if (nh.getParam("/first_test/xr_max", val)) r.xRMax = val;
+  if (nh.getParam("/first_test/y_min", val))  r.yMin = val;
+  if (nh.getParam("/first_test/y_max", val))  r.yMax = val;
+  if (nh.getParam("/first_test/z_min", val))  r.zMin = val;
+  if (nh.getParam("/first_test/z_max", val))  r.zMax = val;
+
+}
+
+//==================================================================================================
+// Main
+//==================================================================================================
 int main (int argc, char** argv)
 {
   ros::init (argc, argv, "first_test");
   ros::NodeHandle nh;
   ros::Publisher velPub; // Create publisher
 
-  //Do not send commands to the Create by default
-  bool driveCreate = false;
-  bool pclVisualizer = false;
+  SRanges ranges;
+  defaultRanges(ranges);
 
-  if (nh.getParam("/first_test/drive_create", driveCreate))
+  //Do not send commands to the Create by default
+  bool enableCreate = false;
+
+  // The raw Kinect data gets rotated about the x-axis by theta radians
+  // This is essentially the measure of tilt between the ground plane and the Kinect
+  double theta = -0.3f;
+
+  double val;
+
+  //Used for storing pointcloud from Kinect
+  CloudT cloudFull;
+
+  //==================================== ROS Parameters ============================================
+  if (nh.getParam("/first_test/enable_create", enableCreate))
   {
-    if (driveCreate)
+    if (enableCreate)
     {
       velPub = nh.advertise<geometry_msgs::Twist>("create_node/cmd_vel", 1);
     }
   }
 
-  /*
-  if (nh.getParam("/first_test/pcl_visualizer", pclVisualizer))
-  {
-    if (pclVisualizer)
-    {
-    }
-  }
-  */
+  if (nh.getParam("/first_test/theta", val)) theta = val;
 
-  pcl_visualization::PCLVisualizer p(argc, argv, "create_kinect_nav_viewer");
+  readRangeParameters(nh, ranges);
 
-  // Get the queue size from the command line
-  int queue_size = 1;
-  parse_argument (argc, argv, "-qsize", queue_size);
-  print_highlight ("Using a queue size of %d\n", queue_size);
+  // Precomputed for efficiency
+  const float cosTheta = cos(theta);
+  const float sinTheta = sin(theta);
 
-  // Get the number of clouds to keep on screen
-  int nr_clouds = 1;
-  parse_argument (argc, argv, "-nclouds", nr_clouds);
+  //================================= Subscribers/publishers =======================================
+  const int queue_size = 1;
+  ros::Subscriber sub = nh.subscribe("/kinect/depth/points2", queue_size, cloud_cb);
 
-  // Create a ROS subscriber
-  ros::Subscriber sub = nh.subscribe ("/kinect/depth/points2", queue_size, cloud_cb);
+  ros::Publisher sliceCloudPub = nh.advertise<sensor_msgs::PointCloud2>("slice_cloud", 1);
+  ros::Publisher leftCloudPub  = nh.advertise<sensor_msgs::PointCloud2>("left_cloud", 1);
+  ros::Publisher rightCloudPub = nh.advertise<sensor_msgs::PointCloud2>("right_cloud", 1);
 
+  ros::Publisher fullMarkerPub  = nh.advertise<visualization_msgs::Marker>("full_slice", 1);
+  ros::Publisher leftMarkerPub  = nh.advertise<visualization_msgs::Marker>("left_slice", 1);
+  ros::Publisher rightMarkerPub = nh.advertise<visualization_msgs::Marker>("right_slice", 1);
 
-
-  pcl::PointCloud<Point> cloud_xyz;
-  ColorHandlerPtr color_handler;
-
+  //===================================== Main Loop ================================================
   while (nh.ok())
   {
     // Spin
     ros::spinOnce();
     ros::Duration(0.001).sleep();
-    p.spinOnce(10);
 
-    // If no cloud received yet, continue
-    if (!cloud_)
-      continue;
+    // If no cloud received yet skip everything below
+    if (!cloud_) continue;
 
-    if (cloud_ == cloud_old_)
-      continue;
+    // If a new cloud has not been received skip everything below
+    if (cloud_ == cloud_old_) continue;
 
-    p.removePointCloud("cloud");
-
-    // Convert to PointCloud<T>
+    // A new cloud has been received so convert the ROS message to a PointCloud<T>
     m.lock();
     {
-      pcl::fromROSMsg (*cloud_, cloud_xyz);
-
-      pcl::PointCloud<Point> fullSlice;
-      pcl::PointCloud<Point> leftBlock;
-      pcl::PointCloud<Point> rightBlock;
-
-      int leftCnt = 0;
-      int rightCnt = 0;
-      int total = 0;
-
-      for (pcl::PointCloud<Point>::const_iterator it = cloud_xyz.begin();
-          it != cloud_xyz.end(); ++it)
-      {
-        float x = (*it).x;
-        float y = (*it).y;
-        float z = (*it).z;
-
-        // Cut out points above and below vertical threshold
-        if ((y < YMAX) && (y > YMIN))
-        {
-          if ((z < ZMAX) && (z > ZMIN))
-          {
-            if ((x < XLMAX) && (x > XLMIN))
-            {
-              leftBlock.push_back(*it);
-              leftCnt++;
-            }
-            
-            if ((x < XRMAX) && (x > XRMIN))
-            {
-              rightBlock.push_back(*it);
-              rightCnt++;
-            }
-          }
-          
-          fullSlice.push_back(*it);
-          total++;
-        }
-      }
-
-      //stringstream ss;
-      //ss << "left: " << leftCnt << " right: " << rightCnt << " total: " << total << "\n";
-      //ROS_INFO(ss.str().c_str());
-
-      if (driveCreate)
-      {
-        float rFudgeFactor = 1.0f;
-        float lFudgeFactor = rFudgeFactor;
-
-        geometry_msgs::Twist twist;
-        geometry_msgs::Vector3 twistLinear;
-        geometry_msgs::Vector3 twistAngular;
-        twistLinear.x = 0.1;
-        twistLinear.y = 0;
-        twistLinear.z = 0;
-
-        twistAngular.x = 0;
-        twistAngular.y = 0;
-        twistAngular.z =
-            rFudgeFactor*(float)rightCnt/(float)total - lFudgeFactor*(float)leftCnt/(float)total;
-
-        twist.linear  = twistLinear;
-        twist.angular = twistAngular;
-
-        velPub.publish(twist);
-      }
-
-      /*
-      NEED TO USE THIS BUT NOT ENOUGH TIME TO UNDERSTAND pcl::PointIndices
-      
-      Eigen3::Vector4f& minPoint = Eigen3::Vector4f();
-      Eigen3::Vector4f& maxPoint = Eigen3::Vector4f();
-      
-      pcl::getMinMax3D( const pcl::PointCloud< PointT > & cloud, 
-      const pcl::PointIndices & indices, 
-      minPoint, 
-      maxPoint);
-      */
-
-      sensor_msgs::PointCloud2 displayCloud;
-
-      pcl::toROSMsg((const pcl::PointCloud<Point>) fullSlice, displayCloud);
-
-      // Set the colorhandler to use the rgb fields from the kinect
-      color_handler.reset(
-        new pcl_visualization::PointCloudColorHandlerRGBField<sensor_msgs::PointCloud2> 
-        (displayCloud));
-
-      p.addPointCloud(fullSlice, color_handler, "cloud");
-
-      // Add a color handler for each field
-      for (size_t i = 0; i < displayCloud.fields.size(); ++i)
-      {
-        color_handler.reset(
-          new pcl_visualization::PointCloudColorHandlerGenericField<sensor_msgs::PointCloud2> 
-          (displayCloud, displayCloud.fields[i].name));
-          
-        p.addPointCloud( fullSlice, color_handler, "cloud" );
-      }
-      cloud_old_ = cloud_;
+      pcl::fromROSMsg(*cloud_, cloudFull);
     }
     m.unlock();
 
-    //Add the cloud to the renderer
-    //ROS_INFO ("New cloud added to the renderer!");
+    cloud_old_ = cloud_;
+
+    CloudT fullSlice;
+    CloudT leftBlock;
+    CloudT rightBlock;
+
+    int leftCnt  = 0;
+    int rightCnt = 0;
+    int total    = 0;
+
+    for (CloudT::const_iterator it = cloudFull.begin(); it != cloudFull.end(); ++it)
+    {
+
+      // Rotate about the x-axis
+      float x = it->x;
+      float y = (it->y)*cosTheta - (it->z)*sinTheta;
+      float z = (it->y)*sinTheta + (it->z)*cosTheta;
+
+      PointT point;
+      point.x = x;
+      point.y = y;
+      point.z = z;
+      point.rgb = it->rgb;
+
+      fullSlice.push_back(point);
+
+      // Cut out points above and below vertical threshold
+      if ((y > ranges.yMin) && (y < ranges.yMax))
+      {
+        if ((z > ranges.zMin) && (z < ranges.zMax))
+        {
+
+          if ((x < ranges.xLMin) && (x > ranges.xLMax))
+          {
+            leftBlock.push_back(point);
+            leftCnt++;
+          }
+          
+          if ((x < ranges.xRMax) && (x > ranges.xRMin))
+          {
+            rightBlock.push_back(point);
+            rightCnt++;
+          }
+
+          total++;
+        }
+      }
+    }
+
+
+    // Full slice
+    visualization_msgs::Marker fullSliceMarker;
+
+    fullSliceMarker.header.frame_id = "kinect_depth";
+    fullSliceMarker.header.stamp = ros::Time::now();
+    fullSliceMarker.ns = "debug";
+    fullSliceMarker.id = 0;
+    fullSliceMarker.type = visualization_msgs::Marker::CUBE;
+
+    fullSliceMarker.scale.x = 10;
+    fullSliceMarker.scale.y = ranges.yMax - ranges.yMin;
+    fullSliceMarker.scale.z = ranges.zMax - ranges.zMin;
+
+    fullSliceMarker.pose.position.x = 0;
+    fullSliceMarker.pose.position.y = (ranges.yMax - ranges.yMin)/2 + ranges.yMin;
+    fullSliceMarker.pose.position.z = (ranges.zMax - ranges.zMin)/2 + ranges.zMin;
+
+    fullSliceMarker.pose.orientation.x = 0.0;
+    fullSliceMarker.pose.orientation.y = 0.0;
+    fullSliceMarker.pose.orientation.z = 0.0;
+    fullSliceMarker.pose.orientation.w = 1.0;
+
+    fullSliceMarker.color.r = 0.0f;
+    fullSliceMarker.color.g = 1.0f;
+    fullSliceMarker.color.b = 0.0f;
+    fullSliceMarker.color.a = 0.4;
+
+    fullMarkerPub.publish(fullSliceMarker);
+
+
+    // Left slice
+    visualization_msgs::Marker leftSliceMarker;
+
+    leftSliceMarker.header.frame_id = "kinect_depth";
+    leftSliceMarker.header.stamp = ros::Time::now();
+    leftSliceMarker.ns = "debug";
+    leftSliceMarker.id = 1;
+    leftSliceMarker.type = visualization_msgs::Marker::CUBE;
+
+    leftSliceMarker.scale.x = ranges.xLMax - ranges.xLMin;
+    leftSliceMarker.scale.y = ranges.yMax - ranges.yMin;
+    leftSliceMarker.scale.z = ranges.zMax - ranges.zMin;
+
+    leftSliceMarker.pose.position.x = (ranges.xLMax - ranges.xLMin)/2 + ranges.xLMin;
+    leftSliceMarker.pose.position.y = (ranges.yMax - ranges.yMin)/2 + ranges.yMin;
+    leftSliceMarker.pose.position.z = (ranges.zMax - ranges.zMin)/2 + ranges.zMin;
+
+    leftSliceMarker.pose.orientation.x = 0.0;
+    leftSliceMarker.pose.orientation.y = 0.0;
+    leftSliceMarker.pose.orientation.z = 0.0;
+    leftSliceMarker.pose.orientation.w = 1.0;
+
+    leftSliceMarker.color.r = 1.0f;
+    leftSliceMarker.color.g = 0.0f;
+    leftSliceMarker.color.b = 0.0f;
+    leftSliceMarker.color.a = 0.4;
+
+    leftMarkerPub.publish(leftSliceMarker);
+
+
+
+    // Right slice
+    visualization_msgs::Marker rightSliceMarker;
+
+    rightSliceMarker.header.frame_id = "kinect_depth";
+    rightSliceMarker.header.stamp = ros::Time::now();
+    rightSliceMarker.ns = "debug";
+    rightSliceMarker.id = 2;
+    rightSliceMarker.type = visualization_msgs::Marker::CUBE;
+
+    rightSliceMarker.scale.x = ranges.xRMax - ranges.xRMin;
+    rightSliceMarker.scale.y = ranges.yMax - ranges.yMin;
+    rightSliceMarker.scale.z = ranges.zMax - ranges.zMin;
+
+    rightSliceMarker.pose.position.x = (ranges.xRMax - ranges.xRMin)/2 + ranges.xRMin;
+    rightSliceMarker.pose.position.y = (ranges.yMax - ranges.yMin)/2 + ranges.yMin;
+    rightSliceMarker.pose.position.z = (ranges.zMax - ranges.zMin)/2 + ranges.zMin;
+
+    rightSliceMarker.pose.orientation.x = 0.0;
+    rightSliceMarker.pose.orientation.y = 0.0;
+    rightSliceMarker.pose.orientation.z = 0.0;
+    rightSliceMarker.pose.orientation.w = 1.0;
+
+    rightSliceMarker.color.r = 0.0f;
+    rightSliceMarker.color.g = 0.0f;
+    rightSliceMarker.color.b = 1.0f;
+    rightSliceMarker.color.a = 0.4;
+
+    rightMarkerPub.publish(rightSliceMarker);
+
+
+
+    sensor_msgs::PointCloud2 sliceCloudMsg;
+    sensor_msgs::PointCloud2 leftCloudMsg;
+    sensor_msgs::PointCloud2 rightCloudMsg;
+
+    pcl::toROSMsg(fullSlice, sliceCloudMsg);
+    pcl::toROSMsg(leftBlock, leftCloudMsg);
+    pcl::toROSMsg(rightBlock, rightCloudMsg);
+
+    sliceCloudMsg.header.frame_id = "kinect_depth";
+    sliceCloudMsg.header.stamp = ros::Time::now();
+
+    leftCloudMsg.header.frame_id = "kinect_depth";
+    leftCloudMsg.header.stamp = ros::Time::now();
+
+    rightCloudMsg.header.frame_id = "kinect_depth";
+    rightCloudMsg.header.stamp = ros::Time::now();
+
+    sliceCloudPub.publish(sliceCloudMsg);
+    leftCloudPub.publish(leftCloudMsg);
+    rightCloudPub.publish(rightCloudMsg);
+
+    if (enableCreate)
+    {
+      float rFudgeFactor = 1.0f;
+      float lFudgeFactor = rFudgeFactor;
+
+      geometry_msgs::Twist twist;
+      geometry_msgs::Vector3 twistLinear;
+      geometry_msgs::Vector3 twistAngular;
+      twistLinear.x = 0.1;
+      twistLinear.y = 0;
+      twistLinear.z = 0;
+
+      twistAngular.x = 0;
+      twistAngular.y = 0;
+      twistAngular.z =
+          rFudgeFactor*(float)rightCnt/(float)total - lFudgeFactor*(float)leftCnt/(float)total;
+
+      twist.linear  = twistLinear;
+      twist.angular = twistAngular;
+
+      velPub.publish(twist);
+    }
   }
 
   return (0);
