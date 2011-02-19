@@ -41,6 +41,7 @@
 #include <visualization_msgs/Marker.h>
 
 #include <iostream>
+#include <sstream>
 #include <stdio.h>
 #include <iterator>
 
@@ -200,7 +201,7 @@ int main (int argc, char** argv)
 
     int leftCnt  = 0;
     int rightCnt = 0;
-    int total    = 0;
+    int total    = 1;
 
     for (CloudT::const_iterator it = cloudFull.begin(); it != cloudFull.end(); ++it)
     {
@@ -357,6 +358,11 @@ int main (int argc, char** argv)
 
     if (enableCreate)
     {
+    
+    	stringstream ss (stringstream::in | stringstream::out);
+
+			string str;
+			
       float rFudgeFactor = 1.0f;
       float lFudgeFactor = rFudgeFactor;
 
@@ -371,6 +377,11 @@ int main (int argc, char** argv)
       twistAngular.y = 0;
       twistAngular.z =
           rFudgeFactor*(float)rightCnt/(float)total - lFudgeFactor*(float)leftCnt/(float)total;
+          
+      ss << "twistAngular.z = " << 0.01f << "\n";
+      
+      ss >> str;
+      ROS_ERROR(str.c_str());
 
       twist.linear  = twistLinear;
       twist.angular = twistAngular;
