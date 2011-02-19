@@ -225,7 +225,7 @@ int main (int argc, char** argv)
         if ((z > ranges.zMin) && (z < ranges.zMax))
         {
 
-          if ((x < ranges.xLMin) && (x > ranges.xLMax))
+          if ((x < ranges.xLMax) && (x > ranges.xLMin))
           {
             leftBlock.push_back(point);
             leftCnt++;
@@ -359,10 +359,10 @@ int main (int argc, char** argv)
     if (enableCreate)
     {
     
-    	stringstream ss (stringstream::in | stringstream::out);
+      stringstream ss (stringstream::in | stringstream::out);
 
-			string str;
-			
+      string str;
+
       float rFudgeFactor = 1.0f;
       float lFudgeFactor = rFudgeFactor;
 
@@ -378,7 +378,7 @@ int main (int argc, char** argv)
       twistAngular.z =
           rFudgeFactor*(float)rightCnt/(float)total - lFudgeFactor*(float)leftCnt/(float)total;
           
-      ss << "twistAngular.z = " << 0.01f << "\n";
+      ss << "twistAngular.z=" << twistAngular.z << "/" << leftCnt << "/" << rightCnt << "/" << total << "\n";
       
       ss >> str;
       ROS_ERROR(str.c_str());
