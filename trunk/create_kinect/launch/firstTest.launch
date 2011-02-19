@@ -18,12 +18,12 @@
     <param name="enable_create" value="true"/>
     <param name="theta" value="-0.25"/>
     <param name="xl_min" value="-1.0"/>
-    <param name="xl_max" value="-0.2"/>
-    <param name="xr_min" value="0.2"/>
+    <param name="xl_max" value="-0.1"/>
+    <param name="xr_min" value="0.1"/>
     <param name="xr_max" value="1.0"/>
     <param name="y_min" value="-0.1"/>
     <param name="y_max" value="0.4"/>
-    <param name="z_min" value="0.5"/>
-    <param name="z_max" value="2.5"/>
+    <param name="z_min" value="0.25"/>
+    <param name="z_max" value="1.0"/>
   </node>
 </launch>
