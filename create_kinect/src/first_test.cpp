@@ -16,7 +16,7 @@
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 // ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 // WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-// DISCLAIMED. IN NO EVENT SHALL PAUL FILITCHKIN BE LIABLE FOR ANY
+// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER BE LIABLE FOR ANY
 // DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
 // (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
 // LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
@@ -24,6 +24,11 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //=================================================================================================
+
+// Local includes
+#include "create_kinect/Mode.h"
+#include "create_kinect/Centroids.h"
+#include "remote_modes.h"
 
 // ROS core
 #include <ros/ros.h>
@@ -55,6 +60,7 @@ typedef pcl::PointCloud<PointT> CloudT;
 
 sensor_msgs::PointCloud2ConstPtr cloud_, cloud_old_;
 boost::mutex m;
+unsigned char mode = create_kinect::stop;
 
 struct SRanges
 {
@@ -86,6 +92,27 @@ void cloud_cb (const sensor_msgs::PointCloud2ConstPtr& cloud)
   m.lock();
   cloud_ = cloud;
   m.unlock();
+}
+
+//==================================================================================================
+//==================================================================================================
+void modeCallback (const create_kinect::Mode m)
+{
+
+  mode = m.mode;
+
+  if(mode == create_kinect::autonomous)
+  {
+    ROS_INFO("autonomous");
+  }
+  else if(mode == create_kinect::stop)
+  {
+    ROS_ERROR("stop");
+  }
+  else if(mode == create_kinect::manual)
+  {
+    ROS_INFO("manual");
+  }
 }
 
 //==================================================================================================
@@ -163,6 +190,49 @@ void publishBoundsMarker(
 }
 
 //==================================================================================================
+//==================================================================================================
+/*
+void publishCentroid(
+    ros::Publisher& pub,
+    unsigned id,
+    const tf::Vector3& pos,
+    struct SRgba& col)
+{
+
+  if (pub.getNumSubscribers() == 0) return;
+
+  visualization_msgs::Marker m;
+
+  m.header.frame_id = "world";
+  m.header.stamp = ros::Time::now();
+  m.ns = "bounds";
+  m.id = id;
+  m.type = visualization_msgs::Marker::SPHERE;
+
+  m.scale.x = scale.x();
+  m.scale.y = scale.y();
+  m.scale.z = scale.z();
+
+  m.pose.position.x = pos.x();
+  m.pose.position.y = pos.y();
+  m.pose.position.z = pos.z();
+
+  m.pose.orientation.x = 0.0;
+  m.pose.orientation.y = 0.0;
+  m.pose.orientation.z = 0.0;
+  m.pose.orientation.w = 1.0;
+
+  m.color.r = col.r;
+  m.color.g = col.g;
+  m.color.b = col.b;
+  m.color.a = col.a;
+
+  pub.publish(m);
+
+}
+*/
+
+//==================================================================================================
 // Main
 //==================================================================================================
 int main (int argc, char** argv)
@@ -212,12 +282,14 @@ int main (int argc, char** argv)
 
   //================================= Subscribers/publishers =======================================
   const int queueSize = 1;
-  ros::Subscriber sub = nh.subscribe("/kinect/depth/points2", queueSize, cloud_cb);
+  ros::Subscriber kinectSub = nh.subscribe("/kinect/depth/points2", queueSize, cloud_cb);
+  ros::Subscriber modeSub = nh.subscribe("/remote_monitor/mode", 1, modeCallback);
 
   ros::Publisher rotatedCloudPub = nh.advertise<sensor_msgs::PointCloud2>("rotated_cloud", 1);
-  ros::Publisher fullMarkerPub  = nh.advertise<visualization_msgs::Marker>("full_slice", 1);
-  ros::Publisher leftMarkerPub  = nh.advertise<visualization_msgs::Marker>("left_slice", 1);
-  ros::Publisher rightMarkerPub = nh.advertise<visualization_msgs::Marker>("right_slice", 1);
+  ros::Publisher fullMarkerPub   = nh.advertise<visualization_msgs::Marker>("full_slice", 1);
+  ros::Publisher leftMarkerPub   = nh.advertise<visualization_msgs::Marker>("left_slice", 1);
+  ros::Publisher rightMarkerPub  = nh.advertise<visualization_msgs::Marker>("right_slice", 1);
+  ros::Publisher centPub = nh.advertise<create_kinect::Centroids>("/remote_monitor/centroids", 1);
 
   //===================================== Main Loop ================================================
   while (nh.ok())
@@ -245,14 +317,20 @@ int main (int argc, char** argv)
     CloudT leftBlock;
     CloudT rightBlock;
 
-    int leftCnt  = 0;
-    int rightCnt = 0;
+    int lCount  = 0;
+    int rCount = 0;
     int total    = 1; // Prevent divide by zero
+
+    float lAvgX = 0;
+    float lAvgY = 0;
+    float lAvgZ = 0;
+    float rAvgX = 0;
+    float rAvgY = 0;
+    float rAvgZ = 0;
 
     for (CloudT::const_iterator it = cloudFull.begin(); it != cloudFull.end(); ++it)
     {
-
-      // Rotate about the x-axis
+      // Rotate about the x-axis to align floor with xz-plane
       float x = it->x;
       float y = (it->y)*cosTheta - (it->z)*sinTheta;
       float z = (it->y)*sinTheta + (it->z)*cosTheta;
@@ -268,24 +346,45 @@ int main (int argc, char** argv)
       // Cut out points above and below vertical threshold
       if ((y > ranges.yMin) && (y < ranges.yMax))
       {
-
         if ((z > ranges.zMin) && (z < ranges.zMax))
         {
           if ((x < ranges.xLMax) && (x > ranges.xLMin))
           {
+            lAvgX += x;
+            lAvgY += y;
+            lAvgZ += z;
             leftBlock.push_back(point);
-            leftCnt++;
+            lCount++;
           }
           
           if ((x < ranges.xRMax) && (x > ranges.xRMin))
           {
+            rAvgX += x;
+            rAvgY += y;
+            rAvgZ += z;
             rightBlock.push_back(point);
-            rightCnt++;
+            rCount++;
           }
           total++;
         }
       }
     }
+
+    lAvgX = lAvgX/(float)lCount;
+    lAvgY = lAvgY/(float)lCount;
+    lAvgZ = lAvgZ/(float)lCount;
+
+    rAvgX = rAvgX/(float)rCount;
+    rAvgY = rAvgY/(float)rCount;
+    rAvgZ = rAvgZ/(float)rCount;
+
+    create_kinect::Centroids centr;
+    centr.centlx = lAvgX;
+    centr.centlz = lAvgZ;
+    centr.centrx = rAvgX;
+    centr.centrz = rAvgZ;
+
+    centPub.publish<create_kinect::Centroids>(centr);
 
     //===================================== Markers ================================================
     tf::Vector3 pos;
@@ -340,26 +439,61 @@ int main (int argc, char** argv)
 
     rotatedCloudPub.publish(rotatedCloudMsg);
 
-    if (enableCreate)
-    {
-      geometry_msgs::Twist twist;
-      geometry_msgs::Vector3 twistLinear;
-      geometry_msgs::Vector3 twistAngular;
+    if (!enableCreate) continue;
 
-      twistLinear.x = speed;
+    geometry_msgs::Twist twist;
+    geometry_msgs::Vector3 twistLinear;
+    geometry_msgs::Vector3 twistAngular;
+
+    if (mode == create_kinect::autonomous)
+    {
+      /*
+      if (total < 1000)
+      {
+        twistLinear.x = speed;
+        twistLinear.y = 0;
+        twistLinear.z = 0;
+
+        twistAngular.x = 0;
+        twistAngular.y = 0;
+        twistAngular.z = 0;
+      }
+      else
+      {
+      */
+        twistLinear.x = speed;
+        twistLinear.y = 0;
+        twistLinear.z = 0;
+
+        twistAngular.x = 0;
+        twistAngular.y = 0;
+        twistAngular.z = lAvgZ - rAvgZ;
+
+        //twistAngular.z = (float)rCount/(float)total - (float)lCount/(float)total;
+        /*
+        if (abs(leftCentX - rightCentX) < 0.1)
+        {
+          twistLinear.x = 0;
+          twistAngular.z = 0;
+        }
+        */
+      //}
+    }
+    else if(mode == create_kinect::stop)
+    {
+      twistLinear.x = 0;
       twistLinear.y = 0;
       twistLinear.z = 0;
 
       twistAngular.x = 0;
       twistAngular.y = 0;
-      twistAngular.z = (float)rightCnt/(float)total - (float)leftCnt/(float)total;
-
-      twist.linear  = twistLinear;
-      twist.angular = twistAngular;
-
-      velPub.publish(twist);
+      twistAngular.z = 0;
     }
+
+    twist.linear  = twistLinear;
+    twist.angular = twistAngular;
+    velPub.publish(twist);
   }
 
-  return (0);
+  return 0;
 }

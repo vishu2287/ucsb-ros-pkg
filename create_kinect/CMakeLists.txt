@@ -17,11 +17,22 @@ set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 
 #uncomment if you have defined messages
-#rosbuild_genmsg()
+rosbuild_genmsg()
 #uncomment if you have defined services
 #rosbuild_gensrv()
 
+find_package(wxWidgets REQUIRED)
+include(${wxWidgets_USE_FILE})
+include_directories( ${wxWidgets_INCLUDE_DIRS} )
+
+rosbuild_add_boost_directories()
+
 rosbuild_add_executable(first_test src/first_test.cpp)
+
+rosbuild_add_executable(remote_monitor src/remote_monitor.cpp src/remote_frame.cpp src/remote_frame_base.cpp)
+rosbuild_link_boost(remote_monitor thread)
+target_link_libraries(remote_monitor ${wxWidgets_LIBRARIES})
+
 #common commands for building c++ executables and libraries
 #rosbuild_add_library(${PROJECT_NAME} src/example.cpp)
 #target_link_libraries(${PROJECT_NAME} another_library)

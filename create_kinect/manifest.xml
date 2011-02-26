@@ -17,6 +17,8 @@ This first test implements a simple bump bot where the Create drives forward whi
   <depend package="geometry_msgs"/>
   <depend package="create_node"/>
   <depend package="tf"/>
+  
+  <rosdep name="wxwidgets"/>
 
 </package>
 
