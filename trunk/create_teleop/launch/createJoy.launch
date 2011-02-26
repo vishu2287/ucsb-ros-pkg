@@ -1,0 +1,16 @@
+<!-- Launches the Create node and state publisher on the machine attached to the Create -->
+<launch>
+  
+  <!-- Create state publisher -->
+  <node pkg="robot_state_publisher" type="state_publisher" name="robot_state_publisher" output="screen">
+    <param name="publish_frequency" type="double" value="30.0" />
+    <!--param name="tf_prefix" type="string" value="" /-->
+  </node>
+
+  <!-- Create Driver -->
+  <node pkg="create_node" type="create_node.py" name="create_node" >
+    <param name="bonus" value="false" />
+    <param name="~port" value="/dev/ttyUSB0" />
+  </node>
+
+</launch>

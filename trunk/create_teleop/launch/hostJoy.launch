@@ -1,0 +1,13 @@
+<!-- Launches the joystick drivers and interface on the host machine -->
+<launch>
+
+  <!-- Run the joystick node -->
+  <node pkg="joy" type="joy_node" name="joystick">
+    <!-- Set the joystick device name -->
+		<param name="dev" value="/dev/input/js0"/>
+  </node>
+
+  <!-- Joystick to Create Driver -->
+  <node pkg="create_teleop" type="create_teleop" name="create_teleop" />
+
+</launch>

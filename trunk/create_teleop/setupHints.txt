@@ -1,0 +1,11 @@
+Setup hints
+
+This project depends on the create_robot software collection.  To get this software:
+svn co https://code.ros.org/svn/ros-pkg/branches/trunk_cturtle/stacks/create_robot
+Be sure to add the required packages to the ROS package path
+export ROS_PACKAGE_PATH=~/create/teleop:~/create_robot:$ROS_PACKAGE_PATH
+
+The default device that the create_node connects to is /dev/ttyUSB0 (the default can be set in create_node.py and I believe it can be defined as a parameter in a launch file)
+
+The joystick must have the correct permissions set - to do this run "sudo launch/initJoy.sh" (this is done only once)
+To launch the Create side run 
