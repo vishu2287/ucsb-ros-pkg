@@ -8,7 +8,7 @@
   </node>
 
   <!-- Joystick to Create Driver -->
-  <node pkg="create_teleop" type="create_teleop" name="create_teleop"/>
+  <node pkg="create_joy" type="create_joy" name="create_joy"/>
 
   <!-- Create state publisher -->
   <node pkg="robot_state_publisher" type="state_publisher" name="robot_state_publisher" output="screen">
