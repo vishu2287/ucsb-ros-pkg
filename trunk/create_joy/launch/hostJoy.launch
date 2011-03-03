@@ -8,6 +8,6 @@
   </node>
 
   <!-- Joystick to Create Driver -->
-  <node pkg="create_teleop" type="create_teleop" name="create_teleop" />
+  <node pkg="create_joy" type="create_joy" name="create_joy" />
 
 </launch>

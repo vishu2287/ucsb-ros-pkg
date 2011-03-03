@@ -11,19 +11,21 @@
   <node pkg="create_node" type="create_node.py" name="create_node" >
     <param name="bonus" value="false" />
     <param name="~port" value="/dev/ttyUSB0" />
+    <param name="~drive_mode" value="twist" />
+    <param name="~has_gyro" value="false" />
   </node>
 
   <!-- Launch the first test program -->
   <node pkg="create_kinect" type="first_test" name="first_test">
     <param name="enable_create" value="true"/>
     <param name="theta" value="-0.25"/>
-    <param name="xl_min" value="-0.5"/>
-    <param name="xl_max" value="-0.1"/>
-    <param name="xr_min" value="0.1"/>
-    <param name="xr_max" value="0.5"/>
+    <param name="xl_min" value="-1.0"/>
+    <param name="xl_max" value="0.0"/>
+    <param name="xr_min" value="0.0"/>
+    <param name="xr_max" value="1.0"/>
     <param name="y_min" value="-0.1"/>
     <param name="y_max" value="0.4"/>
     <param name="z_min" value="0.25"/>
-    <param name="z_max" value="0.5"/>
+    <param name="z_max" value="1.0"/>
   </node>
 </launch>

@@ -37,7 +37,7 @@ class RemoteMonitorApp : public wxApp
         wxID_ANY,
         wxT("Remote Frame"),
         wxDefaultPosition,
-        wxSize(500, 500),
+        wxSize(700, 350),
         wxDEFAULT_FRAME_STYLE & ~wxRESIZE_BORDER);
 
       SetTopWindow(frame);

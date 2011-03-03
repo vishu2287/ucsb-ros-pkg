@@ -30,7 +30,7 @@
 
 #include "remote_frame_base.h"
 #include "create_kinect/Mode.h"
-#include "create_kinect/Centroids.h"
+#include "create_kinect/PointStatus.h"
 
 #include <wx/string.h>
 #include <wx/button.h>
@@ -63,8 +63,7 @@ class CRemoteFrame : public CRemoteFrameBase
 
     ~CRemoteFrame();
 
-    void DisplayCentroids(double leftX, double leftZ, double rightX, double rightZ);
-    void CentCallback(create_kinect::Centroids c);
+    void CentCallback(create_kinect::PointStatus ps);
 
   protected:
     virtual void PressStop(wxCommandEvent& event);

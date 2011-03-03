@@ -28,60 +28,96 @@ CRemoteFrameBase::CRemoteFrameBase( wxWindow* parent, wxWindowID id, const wxStr
 	mpManual = new wxButton( this, wxID_ANY, wxT("Manual"), wxDefaultPosition, wxDefaultSize, 0 );
 	buttonSizer->Add( mpManual, 0, wxALL, 5 );
 	
+	mpTurnAround = new wxButton( this, wxID_ANY, wxT("Turn Around!"), wxDefaultPosition, wxDefaultSize, 0 );
+	buttonSizer->Add( mpTurnAround, 0, wxALL, 5 );
+	
 	mainSizer->Add( buttonSizer, 0, wxEXPAND, 5 );
 	
 	wxGridSizer* centroidSizer;
-	centroidSizer = new wxGridSizer( 4, 2, 0, 0 );
+	centroidSizer = new wxGridSizer( 2, 5, 0, 0 );
 	
-	wxStaticText* leftCentX;
-	leftCentX = new wxStaticText( this, wxID_ANY, wxT("Left Centroid X"), wxDefaultPosition, wxDefaultSize, 0 );
-	leftCentX->Wrap( -1 );
-	leftCentX->SetFont( wxFont( 20, 70, 90, 90, false, wxEmptyString ) );
 	
-	centroidSizer->Add( leftCentX, 0, wxALL, 5 );
+	centroidSizer->Add( 0, 0, 1, wxEXPAND, 5 );
 	
-	mpLeftCentX = new wxTextCtrl( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( 200,-1 ), wxTE_READONLY );
-	mpLeftCentX->SetFont( wxFont( 20, 70, 90, 90, false, wxEmptyString ) );
+	XLabel = new wxStaticText( this, wxID_ANY, wxT("X Centroid"), wxDefaultPosition, wxDefaultSize, 0 );
+	XLabel->Wrap( -1 );
+	XLabel->SetFont( wxFont( 14, 70, 90, 90, false, wxEmptyString ) );
 	
-	centroidSizer->Add( mpLeftCentX, 0, wxALL, 5 );
+	centroidSizer->Add( XLabel, 0, wxALIGN_CENTER|wxALL, 5 );
 	
-	wxStaticText* leftCentZ;
-	leftCentZ = new wxStaticText( this, wxID_ANY, wxT("Left Centroid Z"), wxDefaultPosition, wxDefaultSize, 0 );
-	leftCentZ->Wrap( -1 );
-	leftCentZ->SetFont( wxFont( 20, 70, 90, 90, false, wxEmptyString ) );
+	YLabel = new wxStaticText( this, wxID_ANY, wxT("Y Centroid"), wxDefaultPosition, wxDefaultSize, 0 );
+	YLabel->Wrap( -1 );
+	YLabel->SetFont( wxFont( 14, 70, 90, 90, false, wxEmptyString ) );
 	
-	centroidSizer->Add( leftCentZ, 0, wxALL, 5 );
+	centroidSizer->Add( YLabel, 0, wxALIGN_CENTER|wxALL, 5 );
 	
-	mpLeftCentZ = new wxTextCtrl( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( 200,-1 ), wxTE_READONLY );
-	mpLeftCentZ->SetFont( wxFont( 20, 70, 90, 90, false, wxEmptyString ) );
+	ZLabel = new wxStaticText( this, wxID_ANY, wxT("Z Centroid"), wxDefaultPosition, wxDefaultSize, 0 );
+	ZLabel->Wrap( -1 );
+	ZLabel->SetFont( wxFont( 14, 70, 90, 90, false, wxEmptyString ) );
 	
-	centroidSizer->Add( mpLeftCentZ, 0, wxALL, 5 );
+	centroidSizer->Add( ZLabel, 0, wxALIGN_CENTER|wxALL, 5 );
 	
-	wxStaticText* rightCentX;
-	rightCentX = new wxStaticText( this, wxID_ANY, wxT("Right Centroid X"), wxDefaultPosition, wxDefaultSize, 0 );
-	rightCentX->Wrap( -1 );
-	rightCentX->SetFont( wxFont( 20, 70, 90, 90, false, wxEmptyString ) );
+	Count = new wxStaticText( this, wxID_ANY, wxT("Count"), wxDefaultPosition, wxDefaultSize, 0 );
+	Count->Wrap( -1 );
+	Count->SetFont( wxFont( 14, 70, 90, 90, false, wxEmptyString ) );
 	
-	centroidSizer->Add( rightCentX, 0, wxALL, 5 );
+	centroidSizer->Add( Count, 0, wxALIGN_CENTER|wxALL, 5 );
 	
-	mpRightCentX = new wxTextCtrl( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( 200,-1 ), wxTE_READONLY );
-	mpRightCentX->SetFont( wxFont( 20, 70, 90, 90, false, wxEmptyString ) );
+	wxStaticText* LeftCentLabel;
+	LeftCentLabel = new wxStaticText( this, wxID_ANY, wxT("Left"), wxDefaultPosition, wxDefaultSize, 0 );
+	LeftCentLabel->Wrap( -1 );
+	LeftCentLabel->SetFont( wxFont( 14, 70, 90, 90, false, wxEmptyString ) );
 	
-	centroidSizer->Add( mpRightCentX, 0, wxALL, 5 );
+	centroidSizer->Add( LeftCentLabel, 0, wxALIGN_CENTER|wxALL, 5 );
 	
-	wxStaticText* rightCentZ;
-	rightCentZ = new wxStaticText( this, wxID_ANY, wxT("Right Centroid Z"), wxDefaultPosition, wxDefaultSize, 0 );
-	rightCentZ->Wrap( -1 );
-	rightCentZ->SetFont( wxFont( 20, 70, 90, 90, false, wxEmptyString ) );
+	mpLeftCentX = new wxTextCtrl( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( 100,-1 ), wxTE_READONLY );
+	mpLeftCentX->SetFont( wxFont( 14, 70, 90, 90, false, wxEmptyString ) );
 	
-	centroidSizer->Add( rightCentZ, 0, wxALL, 5 );
+	centroidSizer->Add( mpLeftCentX, 0, wxALIGN_CENTER|wxALL, 5 );
 	
-	mpRightCentZ = new wxTextCtrl( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( 200,-1 ), wxTE_READONLY );
-	mpRightCentZ->SetFont( wxFont( 20, 70, 90, 90, false, wxEmptyString ) );
+	mpLeftCentY = new wxTextCtrl( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( 100,-1 ), wxTE_READONLY );
+	mpLeftCentY->SetFont( wxFont( 14, 70, 90, 90, false, wxEmptyString ) );
 	
-	centroidSizer->Add( mpRightCentZ, 0, wxALL, 5 );
+	centroidSizer->Add( mpLeftCentY, 0, wxALIGN_CENTER|wxALL, 5 );
 	
-	mainSizer->Add( centroidSizer, 1, wxEXPAND, 5 );
+	mpLeftCentZ = new wxTextCtrl( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( 100,-1 ), wxTE_READONLY );
+	mpLeftCentZ->SetFont( wxFont( 14, 70, 90, 90, false, wxEmptyString ) );
+	
+	centroidSizer->Add( mpLeftCentZ, 0, wxALIGN_CENTER|wxALL, 5 );
+	
+	mpLeftCount = new wxTextCtrl( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( 100,-1 ), wxTE_READONLY );
+	mpLeftCount->SetFont( wxFont( 14, 70, 90, 90, false, wxEmptyString ) );
+	
+	centroidSizer->Add( mpLeftCount, 0, wxALIGN_CENTER|wxALL, 5 );
+	
+	wxStaticText* RightCentLabel;
+	RightCentLabel = new wxStaticText( this, wxID_ANY, wxT("Right"), wxDefaultPosition, wxDefaultSize, 0 );
+	RightCentLabel->Wrap( -1 );
+	RightCentLabel->SetFont( wxFont( 14, 70, 90, 90, false, wxEmptyString ) );
+	
+	centroidSizer->Add( RightCentLabel, 0, wxALIGN_CENTER|wxALL, 5 );
+	
+	mpRightCentX = new wxTextCtrl( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( 100,-1 ), wxTE_READONLY );
+	mpRightCentX->SetFont( wxFont( 14, 70, 90, 90, false, wxEmptyString ) );
+	
+	centroidSizer->Add( mpRightCentX, 0, wxALIGN_CENTER|wxALL, 5 );
+	
+	mpRightCentY = new wxTextCtrl( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( 100,-1 ), wxTE_READONLY );
+	mpRightCentY->SetFont( wxFont( 14, 70, 90, 90, false, wxEmptyString ) );
+	
+	centroidSizer->Add( mpRightCentY, 0, wxALIGN_CENTER|wxALL, 5 );
+	
+	mpRightCentZ = new wxTextCtrl( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( 100,-1 ), wxTE_READONLY );
+	mpRightCentZ->SetFont( wxFont( 14, 70, 90, 90, false, wxEmptyString ) );
+	
+	centroidSizer->Add( mpRightCentZ, 0, wxALIGN_CENTER|wxALL, 5 );
+	
+	mpRightCount = new wxTextCtrl( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( 100,-1 ), wxTE_READONLY );
+	mpRightCount->SetFont( wxFont( 14, 70, 90, 90, false, wxEmptyString ) );
+	
+	centroidSizer->Add( mpRightCount, 0, wxALIGN_CENTER|wxALL, 5 );
+	
+	mainSizer->Add( centroidSizer, 0, 0, 5 );
 	
 	this->SetSizer( mainSizer );
 	this->Layout();
@@ -92,6 +128,7 @@ CRemoteFrameBase::CRemoteFrameBase( wxWindow* parent, wxWindowID id, const wxStr
 	mpStop->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( CRemoteFrameBase::PressStop ), NULL, this );
 	mpAutonomous->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( CRemoteFrameBase::PressAutonomous ), NULL, this );
 	mpManual->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( CRemoteFrameBase::PressManual ), NULL, this );
+	mpTurnAround->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( CRemoteFrameBase::PressTurnAround ), NULL, this );
 }
 
 CRemoteFrameBase::~CRemoteFrameBase()
@@ -100,5 +137,6 @@ CRemoteFrameBase::~CRemoteFrameBase()
 	mpStop->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( CRemoteFrameBase::PressStop ), NULL, this );
 	mpAutonomous->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( CRemoteFrameBase::PressAutonomous ), NULL, this );
 	mpManual->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( CRemoteFrameBase::PressManual ), NULL, this );
+	mpTurnAround->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( CRemoteFrameBase::PressTurnAround ), NULL, this );
 	
 }

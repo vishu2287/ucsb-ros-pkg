@@ -27,7 +27,7 @@
 
 // Local includes
 #include "create_kinect/Mode.h"
-#include "create_kinect/Centroids.h"
+#include "create_kinect/PointStatus.h"
 #include "remote_modes.h"
 
 // ROS core
@@ -60,7 +60,7 @@ typedef pcl::PointCloud<PointT> CloudT;
 
 sensor_msgs::PointCloud2ConstPtr cloud_, cloud_old_;
 boost::mutex m;
-unsigned char mode = create_kinect::stop;
+unsigned char mode = create_kinect::manual;
 
 struct SRanges
 {
@@ -101,17 +101,22 @@ void modeCallback (const create_kinect::Mode m)
 
   mode = m.mode;
 
+  // DEBUG: Display mode
   if(mode == create_kinect::autonomous)
   {
-    ROS_INFO("autonomous");
+    ROS_ERROR("Mode: Autonomous");
   }
   else if(mode == create_kinect::stop)
   {
-    ROS_ERROR("stop");
+      ROS_ERROR("Mode: Stop");
   }
   else if(mode == create_kinect::manual)
   {
-    ROS_INFO("manual");
+      ROS_ERROR("Mode: Manual");
+  }
+  else if(mode == create_kinect::turnAround)
+  {
+      ROS_ERROR("Mode: Turn Around");
   }
 }
 
@@ -138,7 +143,7 @@ void readRangeParameters(ros::NodeHandle& nh, struct SRanges& r)
 
   if (nh.getParam("/first_test/xl_min", val)) r.xLMin = val;
   if (nh.getParam("/first_test/xl_max", val)) r.xLMax = val;
-  if (nh.getParam("/first_test/xr_min", val)) r.xRMax = val;
+  if (nh.getParam("/first_test/xr_min", val)) r.xRMin = val;
   if (nh.getParam("/first_test/xr_max", val)) r.xRMax = val;
   if (nh.getParam("/first_test/y_min", val))  r.yMin = val;
   if (nh.getParam("/first_test/y_max", val))  r.yMax = val;
@@ -149,15 +154,13 @@ void readRangeParameters(ros::NodeHandle& nh, struct SRanges& r)
 
 //==================================================================================================
 //==================================================================================================
-void publishBoundsMarker(
+void PublishBoundMarker(
     ros::Publisher& pub,
     unsigned id,
     const tf::Vector3& pos,
     const tf::Vector3& scale,
     struct SRgba& col)
 {
-
-  if (pub.getNumSubscribers() == 0) return;
 
   visualization_msgs::Marker m;
 
@@ -187,6 +190,59 @@ void publishBoundsMarker(
 
   pub.publish(m);
 
+}
+
+//==================================================================================================
+//==================================================================================================
+void PublishRangeMarkers(
+    struct SRanges& r,
+    ros::Publisher& leftMarkerPub,
+    ros::Publisher& rightMarkerPub)
+{
+
+  tf::Vector3 pos;
+  tf::Vector3 scale;
+  struct SRgba col;
+
+  if (leftMarkerPub.getNumSubscribers() > 0)
+  {
+    // Left bounds
+    pos.setX((r.xLMax - r.xLMin)/2 + r.xLMin);
+    pos.setY((r.yMax - r.yMin)/2 + r.yMin);
+    pos.setZ((r.zMax - r.zMin)/2 + r.zMin);
+
+    scale.setX(r.xLMax - r.xLMin);
+    scale.setY(r.yMax - r.yMin);
+    scale.setZ(r.zMax - r.zMin);
+
+    // Semi-transparent blue
+    col.r = 0.0f;
+    col.g = 0.0f;
+    col.b = 1.0f;
+    col.a = 0.3f;
+
+    PublishBoundMarker(leftMarkerPub, 1, pos, scale, col);
+  }
+
+  if (rightMarkerPub.getNumSubscribers() > 0)
+  {
+    // Right bounds
+    pos.setX((r.xRMax - r.xRMin)/2 + r.xRMin);
+    pos.setY((r.yMax - r.yMin)/2 + r.yMin);
+    pos.setZ((r.zMax - r.zMin)/2 + r.zMin);
+
+    scale.setX(r.xRMax - r.xRMin);
+    scale.setY(r.yMax - r.yMin);
+    scale.setZ(r.zMax - r.zMin);
+
+    // Semi-transparent red
+    col.r = 1.0f;
+    col.g = 0.0f;
+    col.b = 0.0f;
+    col.a = 0.3f;
+
+    PublishBoundMarker(rightMarkerPub, 2, pos, scale, col);
+  }
 }
 
 //==================================================================================================
@@ -228,7 +284,6 @@ void publishCentroid(
   m.color.a = col.a;
 
   pub.publish(m);
-
 }
 */
 
@@ -286,40 +341,48 @@ int main (int argc, char** argv)
   ros::Subscriber modeSub = nh.subscribe("/remote_monitor/mode", 1, modeCallback);
 
   ros::Publisher rotatedCloudPub = nh.advertise<sensor_msgs::PointCloud2>("rotated_cloud", 1);
-  ros::Publisher fullMarkerPub   = nh.advertise<visualization_msgs::Marker>("full_slice", 1);
   ros::Publisher leftMarkerPub   = nh.advertise<visualization_msgs::Marker>("left_slice", 1);
   ros::Publisher rightMarkerPub  = nh.advertise<visualization_msgs::Marker>("right_slice", 1);
-  ros::Publisher centPub = nh.advertise<create_kinect::Centroids>("/remote_monitor/centroids", 1);
+  ros::Publisher centPub =
+    nh.advertise<create_kinect::PointStatus>("/remote_monitor/pointStatus", 1);
+
+  unsigned slowCounter = 0;
+  bool newData = false;
 
   //===================================== Main Loop ================================================
   while (nh.ok())
   {
-    // Spin
     ros::spinOnce();
-    ros::Duration(0.001).sleep();
+    ros::Duration(0.1).sleep();
 
-    // If no cloud received yet skip everything below
-    if (!cloud_) continue;
-
-    // If a new cloud has not been received skip everything below
-    if (cloud_ == cloud_old_) continue;
-
-    // A new cloud has been received so convert the ROS message to a PointCloud<T>
-    m.lock();
+    // Do this up to once a second
+    if (slowCounter >= 9)
     {
-      pcl::fromROSMsg(*cloud_, cloudFull);
+      PublishRangeMarkers(ranges, leftMarkerPub, rightMarkerPub);
+      slowCounter = 0;
     }
-    m.unlock();
+    else
+    {
+      slowCounter++;
+    }
 
-    cloud_old_ = cloud_;
+    // If no cloud received or if we have no new cloud data
+    if (!cloud_ || (cloud_ == cloud_old_))
+    {
+      newData = false;
+    }
+    else
+    {
+      newData = true;
+    }
 
     CloudT rotatedCloud;
     CloudT leftBlock;
     CloudT rightBlock;
 
-    int lCount  = 0;
+    int lCount = 0;
     int rCount = 0;
-    int total    = 1; // Prevent divide by zero
+    int tCount;
 
     float lAvgX = 0;
     float lAvgY = 0;
@@ -328,171 +391,156 @@ int main (int argc, char** argv)
     float rAvgY = 0;
     float rAvgZ = 0;
 
-    for (CloudT::const_iterator it = cloudFull.begin(); it != cloudFull.end(); ++it)
+    if (newData)
     {
-      // Rotate about the x-axis to align floor with xz-plane
-      float x = it->x;
-      float y = (it->y)*cosTheta - (it->z)*sinTheta;
-      float z = (it->y)*sinTheta + (it->z)*cosTheta;
-
-      PointT point;
-      point.x = x;
-      point.y = y;
-      point.z = z;
-      point.rgb = it->rgb;
-
-      rotatedCloud.push_back(point);
-
-      // Cut out points above and below vertical threshold
-      if ((y > ranges.yMin) && (y < ranges.yMax))
+      // A new cloud has been received so convert the ROS message to a PointCloud<T>
+      m.lock();
       {
-        if ((z > ranges.zMin) && (z < ranges.zMax))
+        pcl::fromROSMsg(*cloud_, cloudFull);
+      }
+      m.unlock();
+
+      // Set the old clound to make sure
+      cloud_old_ = cloud_;
+
+      for (CloudT::const_iterator it = cloudFull.begin(); it != cloudFull.end(); ++it)
+      {
+        // Rotate about the x-axis to align floor with xz-plane
+        float x = it->x;
+        float y = (it->y)*cosTheta - (it->z)*sinTheta;
+        float z = (it->y)*sinTheta + (it->z)*cosTheta;
+
+        PointT point;
+        point.x = x;
+        point.y = y;
+        point.z = z;
+        point.rgb = it->rgb;
+
+        rotatedCloud.push_back(point);
+
+        // Cut out points above and below vertical threshold
+        if ((y > ranges.yMin) && (y < ranges.yMax))
         {
-          if ((x < ranges.xLMax) && (x > ranges.xLMin))
+          if ((z > ranges.zMin) && (z < ranges.zMax))
           {
-            lAvgX += x;
-            lAvgY += y;
-            lAvgZ += z;
-            leftBlock.push_back(point);
-            lCount++;
+            if ((x < ranges.xLMax) && (x > ranges.xLMin))
+            {
+              lAvgX += x;
+              lAvgY += y;
+              lAvgZ += z;
+              leftBlock.push_back(point);
+              lCount++;
+            }
+
+            if ((x < ranges.xRMax) && (x > ranges.xRMin))
+            {
+              rAvgX += x;
+              rAvgY += y;
+              rAvgZ += z;
+              rightBlock.push_back(point);
+              rCount++;
+            }
           }
-          
-          if ((x < ranges.xRMax) && (x > ranges.xRMin))
-          {
-            rAvgX += x;
-            rAvgY += y;
-            rAvgZ += z;
-            rightBlock.push_back(point);
-            rCount++;
-          }
-          total++;
         }
       }
+
+      tCount = lCount + rCount;
+
+      if (lCount != 0)
+      {
+        lAvgX = lAvgX/(float)lCount;
+        lAvgY = lAvgY/(float)lCount;
+        lAvgZ = lAvgZ/(float)lCount;
+      }
+
+      if (rCount != 0)
+      {
+        rAvgX = rAvgX/(float)rCount;
+        rAvgY = rAvgY/(float)rCount;
+        rAvgZ = rAvgZ/(float)rCount;
+      }
+
+      create_kinect::PointStatus ps;
+      ps.centlx = lAvgX;
+      ps.cently = lAvgY;
+      ps.centlz = lAvgZ;
+      ps.centrx = rAvgX;
+      ps.centry = rAvgY;
+      ps.centrz = rAvgZ;
+      ps.pointCntl = lCount;
+      ps.pointCntr = rCount;
+
+      centPub.publish<create_kinect::PointStatus>(ps);
+
+      //=================================== Point Clouds ===========================================
+      sensor_msgs::PointCloud2 rotatedCloudMsg;
+
+      pcl::toROSMsg(rotatedCloud, rotatedCloudMsg);
+
+      rotatedCloudMsg.header.frame_id = "world";
+      rotatedCloudMsg.header.stamp = ros::Time::now();
+
+      rotatedCloudPub.publish(rotatedCloudMsg);
     }
 
-    lAvgX = lAvgX/(float)lCount;
-    lAvgY = lAvgY/(float)lCount;
-    lAvgZ = lAvgZ/(float)lCount;
-
-    rAvgX = rAvgX/(float)rCount;
-    rAvgY = rAvgY/(float)rCount;
-    rAvgZ = rAvgZ/(float)rCount;
-
-    create_kinect::Centroids centr;
-    centr.centlx = lAvgX;
-    centr.centlz = lAvgZ;
-    centr.centrx = rAvgX;
-    centr.centrz = rAvgZ;
-
-    centPub.publish<create_kinect::Centroids>(centr);
-
-    //===================================== Markers ================================================
-    tf::Vector3 pos;
-    tf::Vector3 scale;
-    struct SRgba col;
-
-    pos.setX(0);
-    pos.setY((ranges.yMax - ranges.yMin)/2 + ranges.yMin);
-    pos.setZ((ranges.zMax - ranges.zMin)/2 + ranges.zMin);
-
-    scale.setX(4);
-    scale.setY(ranges.yMax - ranges.yMin);
-    scale.setZ(ranges.zMax - ranges.zMin);
-
-    col.r = 0.0f;
-    col.g = 1.0f;
-    col.b = 0.0f;
-    col.a = 0.3f;
-
-    // Full slice
-    publishBoundsMarker(fullMarkerPub, 0, pos, scale, col);
-
-    // Left bounds
-    pos.setX((ranges.xLMax - ranges.xLMin)/2 + ranges.xLMin);
-    scale.setX(ranges.xLMax - ranges.xLMin);
-
-    col.r = 0.0f;
-    col.g = 0.0f;
-    col.b = 1.0f;
-    col.a = 0.4f;
-
-    publishBoundsMarker(leftMarkerPub, 1, pos, scale, col);
-
-    // Right bounds
-    pos.setX((ranges.xRMax - ranges.xRMin)/2 + ranges.xRMin);
-    scale.setX(ranges.xRMax - ranges.xRMin);
-
-    col.r = 1.0f;
-    col.g = 0.0f;
-    col.b = 0.0f;
-    col.a = 0.4f;
-
-    publishBoundsMarker(rightMarkerPub, 2, pos, scale, col);
-
-    //=================================== Point Clouds =============================================
-    sensor_msgs::PointCloud2 rotatedCloudMsg;
-
-    pcl::toROSMsg(rotatedCloud, rotatedCloudMsg);
-
-    rotatedCloudMsg.header.frame_id = "world";
-    rotatedCloudMsg.header.stamp = ros::Time::now();
-
-    rotatedCloudPub.publish(rotatedCloudMsg);
-
-    if (!enableCreate) continue;
-
-    geometry_msgs::Twist twist;
-    geometry_msgs::Vector3 twistLinear;
-    geometry_msgs::Vector3 twistAngular;
-
-    if (mode == create_kinect::autonomous)
+    //=================================== Create Control ===========================================
+    if (enableCreate)
     {
-      /*
-      if (total < 1000)
+      if ((mode == create_kinect::autonomous) && newData)
       {
-        twistLinear.x = speed;
+        geometry_msgs::Twist twist;
+        geometry_msgs::Vector3 twistLinear;
+        geometry_msgs::Vector3 twistAngular;
+
+        if (tCount < 1000)
+        {
+          twistLinear.x = speed;
+          twistLinear.y = 0;
+          twistLinear.z = 0;
+
+          twistAngular.x = 0;
+          twistAngular.y = 0;
+          twistAngular.z = 0;
+        }
+        else
+        {
+          twistLinear.x = speed;
+          twistLinear.y = 0;
+          twistLinear.z = 0;
+
+          twistAngular.x = 0;
+          twistAngular.y = 0;
+          twistAngular.z = (float)rCount/(float)tCount - (float)lCount/(float)tCount;
+        }
+
+        twist.linear  = twistLinear;
+        twist.angular = twistAngular;
+        velPub.publish(twist);
+      }
+      else if(mode == create_kinect::stop)
+      {
+        geometry_msgs::Twist twist;
+        geometry_msgs::Vector3 twistLinear;
+        geometry_msgs::Vector3 twistAngular;
+
+        twistLinear.x = 0;
         twistLinear.y = 0;
         twistLinear.z = 0;
 
         twistAngular.x = 0;
         twistAngular.y = 0;
         twistAngular.z = 0;
+
+        twist.linear  = twistLinear;
+        twist.angular = twistAngular;
+        velPub.publish(twist);
+
       }
-      else
+      else if(mode == create_kinect::manual)
       {
-      */
-        twistLinear.x = speed;
-        twistLinear.y = 0;
-        twistLinear.z = 0;
-
-        twistAngular.x = 0;
-        twistAngular.y = 0;
-        twistAngular.z = lAvgZ - rAvgZ;
-
-        //twistAngular.z = (float)rCount/(float)total - (float)lCount/(float)total;
-        /*
-        if (abs(leftCentX - rightCentX) < 0.1)
-        {
-          twistLinear.x = 0;
-          twistAngular.z = 0;
-        }
-        */
-      //}
+        //Do something?
+      }
     }
-    else if(mode == create_kinect::stop)
-    {
-      twistLinear.x = 0;
-      twistLinear.y = 0;
-      twistLinear.z = 0;
-
-      twistAngular.x = 0;
-      twistAngular.y = 0;
-      twistAngular.z = 0;
-    }
-
-    twist.linear  = twistLinear;
-    twist.angular = twistAngular;
-    velPub.publish(twist);
   }
 
   return 0;

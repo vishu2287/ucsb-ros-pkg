@@ -52,8 +52,8 @@ CRemoteFrame::CRemoteFrame(
 
   mNh = nh;
   mModePub = nh->advertise<create_kinect::Mode>("remote_monitor/mode", 1);
-  mCentSub = nh->subscribe<create_kinect::Centroids>(
-      "/remote_monitor/centroids", 1, &CRemoteFrame::CentCallback, this);
+  mCentSub = nh->subscribe<create_kinect::PointStatus>(
+      "/remote_monitor/pointStatus", 1, &CRemoteFrame::CentCallback, this);
 }
 
 //=================================================================================================
@@ -64,23 +64,20 @@ CRemoteFrame::~CRemoteFrame()
 }
 //=================================================================================================
 //=================================================================================================
-void CRemoteFrame::CentCallback(create_kinect::Centroids c)
+void CRemoteFrame::CentCallback(create_kinect::PointStatus p)
 {
-  DisplayCentroids(c.centlx, c.centlz, c.centrx, c.centrz);
-}
-//=================================================================================================
-//=================================================================================================
-void CRemoteFrame::DisplayCentroids(double leftX, double leftZ, double rightX, double rightZ)
-{
-  wxString leftXText  = wxString::Format(_T("%0.2f"), leftX);
-  wxString leftZText  = wxString::Format(_T("%0.2f"), leftZ);
-  wxString rightXText = wxString::Format(_T("%0.2f"), rightX);
-  wxString rightZText = wxString::Format(_T("%0.2f"), rightZ);
 
-  mpLeftCentX->SetValue(leftXText);
-  mpLeftCentZ->SetValue(leftZText);
-  mpRightCentX->SetValue(rightXText);
-  mpRightCentZ->SetValue(rightZText);
+  mpLeftCentX->SetValue(wxString::Format(_T("%0.3f"), p.centlx));
+  mpLeftCentY->SetValue(wxString::Format(_T("%0.3f"), p.cently));
+  mpLeftCentZ->SetValue(wxString::Format(_T("%0.3f"), p.centlz));
+
+  mpRightCentX->SetValue(wxString::Format(_T("%0.3f"), p.centrx));
+  mpRightCentY->SetValue(wxString::Format(_T("%0.3f"), p.centry));
+  mpRightCentZ->SetValue(wxString::Format(_T("%0.3f"), p.centrz));
+
+  mpRightCount->SetValue(wxString::Format(_T("%d"), p.pointCntr));
+  mpLeftCount->SetValue(wxString::Format(_T("%d"), p.pointCntl));
+
 }
 
 //=================================================================================================

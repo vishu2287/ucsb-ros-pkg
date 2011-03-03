@@ -33,20 +33,31 @@ class CRemoteFrameBase : public wxFrame
 		wxButton* mpStop;
 		wxButton* mpAutonomous;
 		wxButton* mpManual;
+		wxButton* mpTurnAround;
+		
+		wxStaticText* XLabel;
+		wxStaticText* YLabel;
+		wxStaticText* ZLabel;
+		wxStaticText* Count;
 		wxTextCtrl* mpLeftCentX;
+		wxTextCtrl* mpLeftCentY;
 		wxTextCtrl* mpLeftCentZ;
+		wxTextCtrl* mpLeftCount;
 		wxTextCtrl* mpRightCentX;
+		wxTextCtrl* mpRightCentY;
 		wxTextCtrl* mpRightCentZ;
+		wxTextCtrl* mpRightCount;
 		
 		// Virtual event handlers, overide them in your derived class
 		virtual void PressStop( wxCommandEvent& event ) { event.Skip(); }
 		virtual void PressAutonomous( wxCommandEvent& event ) { event.Skip(); }
 		virtual void PressManual( wxCommandEvent& event ) { event.Skip(); }
+		virtual void PressTurnAround( wxCommandEvent& event ) { event.Skip(); }
 		
 	
 	public:
 		
-		CRemoteFrameBase( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Remote Monitor"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 472,384 ), long style = wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL );
+		CRemoteFrameBase( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Remote Monitor"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 587,225 ), long style = wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL );
 		~CRemoteFrameBase();
 	
 };

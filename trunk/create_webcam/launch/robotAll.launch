@@ -16,8 +16,10 @@
 
   <!-- Create Driver -->
   <node pkg="create_node" type="create_node.py" name="create_node" >
-    <param name="bonus" value="false" />
-    <param name="~port" value="/dev/ttyUSB0" />
+    <param name="bonus" value="false"/>
+    <param name="~port" value="/dev/ttyUSB0"/>
+    <param name="~drive_mode" value="twist"/>
+    <param name="~has_gyro" value="false"/>
   </node>
 
 </launch>
