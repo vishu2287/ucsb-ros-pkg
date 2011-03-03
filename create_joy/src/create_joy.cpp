@@ -81,8 +81,6 @@ void CreateTeleop::sendTwist(const ros::TimerEvent& e)
 	twist.angular = twistAngular;
 	
 	vel_pub_.publish(twist);
-	
-	//printf("linear: %f angular: %f \n", twistAngular.z, twistLinear.x);
 }
 
 // Main
@@ -91,7 +89,6 @@ int main(int argc, char** argv)
   ros::init(argc, argv, "create_teleop");
 
   CreateTeleop myCreateTeleop;
-
 
   ros::spin();
 }

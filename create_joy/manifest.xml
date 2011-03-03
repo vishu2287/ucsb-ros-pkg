@@ -1,10 +1,10 @@
 <package>
   <description brief="create_joy">
 
-     Provides joystick control for the iRobot Create.  
+Provides joystick control for the iRobot Create.  
 
   </description>
-  <author>filitchp</author>
+  <author>Paul Filitchkin</author>
   <license>BSD</license>
   <review status="unreviewed" notes=""/>
   <url>http://code.google.com/p/ucsb-ros-pkg/wiki/create_webcam</url>

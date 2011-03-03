@@ -15,7 +15,8 @@ namespace create_kinect
   {
     stop = 0,
     autonomous,
-    manual
+    manual,
+    turnAround
   };
 
 
