@@ -106,6 +106,15 @@ void CRemoteFrame::PressManual(wxCommandEvent& event)
   m.mode = create_kinect::manual;
   mModePub.publish(m);
 }
+
+//=================================================================================================
+//=================================================================================================
+void CRemoteFrame::PressTurnAround(wxCommandEvent& event)
+{
+  create_kinect::Mode m;
+  m.mode = create_kinect::turnAround;
+  mModePub.publish(m);
+}
 //=================================================================================================
 //=================================================================================================
 void CRemoteFrame::OnUpdate(wxTimerEvent& evt)

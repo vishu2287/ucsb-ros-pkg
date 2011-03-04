@@ -61,6 +61,8 @@ typedef pcl::PointCloud<PointT> CloudT;
 sensor_msgs::PointCloud2ConstPtr cloud_, cloud_old_;
 boost::mutex m;
 unsigned char mode = create_kinect::manual;
+unsigned char modePrev = create_kinect::manual;
+unsigned actionTimer = 0;
 
 struct SRanges
 {
@@ -87,7 +89,7 @@ struct SRgba
 // Description:
 //   This callback intercepts the message from the ROS Kinect node
 //==================================================================================================
-void cloud_cb (const sensor_msgs::PointCloud2ConstPtr& cloud)
+void CloudCallback (const sensor_msgs::PointCloud2ConstPtr& cloud)
 {
   m.lock();
   cloud_ = cloud;
@@ -96,12 +98,12 @@ void cloud_cb (const sensor_msgs::PointCloud2ConstPtr& cloud)
 
 //==================================================================================================
 //==================================================================================================
-void modeCallback (const create_kinect::Mode m)
+void ModeCallback (const create_kinect::Mode m)
 {
 
+  modePrev = mode;
   mode = m.mode;
 
-  // DEBUG: Display mode
   if(mode == create_kinect::autonomous)
   {
     ROS_ERROR("Mode: Autonomous");
@@ -116,13 +118,14 @@ void modeCallback (const create_kinect::Mode m)
   }
   else if(mode == create_kinect::turnAround)
   {
+      actionTimer = 0;
       ROS_ERROR("Mode: Turn Around");
   }
 }
 
 //==================================================================================================
 //==================================================================================================
-void defaultRanges(struct SRanges& r)
+void DefaultRanges(struct SRanges& r)
 {
   r.xLMin = -1.0f;
   r.xLMax = -0.2f;
@@ -136,7 +139,7 @@ void defaultRanges(struct SRanges& r)
 
 //==================================================================================================
 //==================================================================================================
-void readRangeParameters(ros::NodeHandle& nh, struct SRanges& r)
+void ReadRangeParameters(ros::NodeHandle& nh, struct SRanges& r)
 {
 
   double val;
@@ -247,46 +250,24 @@ void PublishRangeMarkers(
 
 //==================================================================================================
 //==================================================================================================
-/*
-void publishCentroid(
-    ros::Publisher& pub,
-    unsigned id,
-    const tf::Vector3& pos,
-    struct SRgba& col)
+void DriveCreate(ros::Publisher& velPub, double linear, double angular)
 {
+  geometry_msgs::Twist twist;
+  geometry_msgs::Vector3 twistLinear;
+  geometry_msgs::Vector3 twistAngular;
 
-  if (pub.getNumSubscribers() == 0) return;
+  twistLinear.x = linear;
+  twistLinear.y = 0;
+  twistLinear.z = 0;
 
-  visualization_msgs::Marker m;
+  twistAngular.x = 0;
+  twistAngular.y = 0;
+  twistAngular.z = angular;
 
-  m.header.frame_id = "world";
-  m.header.stamp = ros::Time::now();
-  m.ns = "bounds";
-  m.id = id;
-  m.type = visualization_msgs::Marker::SPHERE;
-
-  m.scale.x = scale.x();
-  m.scale.y = scale.y();
-  m.scale.z = scale.z();
-
-  m.pose.position.x = pos.x();
-  m.pose.position.y = pos.y();
-  m.pose.position.z = pos.z();
-
-  m.pose.orientation.x = 0.0;
-  m.pose.orientation.y = 0.0;
-  m.pose.orientation.z = 0.0;
-  m.pose.orientation.w = 1.0;
-
-  m.color.r = col.r;
-  m.color.g = col.g;
-  m.color.b = col.b;
-  m.color.a = col.a;
-
-  pub.publish(m);
+  twist.linear  = twistLinear;
+  twist.angular = twistAngular;
+  velPub.publish(twist);
 }
-*/
-
 //==================================================================================================
 // Main
 //==================================================================================================
@@ -297,10 +278,11 @@ int main (int argc, char** argv)
   ros::Publisher velPub; // Create publisher
 
   SRanges ranges;
-  defaultRanges(ranges);
+  DefaultRanges(ranges);
 
   //Do not send commands to the Create by default
   bool enableCreate = false;
+  bool enableJoystick = false;
 
   // The raw Kinect data gets rotated about the x-axis by theta radians
   // This is essentially the measure of tilt between the ground plane and the Kinect
@@ -323,13 +305,22 @@ int main (int argc, char** argv)
     }
   }
 
+  /*
+  if (nh.getParam("/first_test/enable_joystick", enableJoystick))
+  {
+    if (enableCreate)
+    {
+      velPub = nh.advertise<geometry_msgs::Twist>("create_node/cmd_vel", 1);
+    }
+  }
+*/
   // Get the Kinect rotation angle
   if (nh.getParam("/first_test/theta", val)) theta = val;
 
   // Get the forward speed for the create
   if (nh.getParam("/first_test/speed", val)) speed = val;
 
-  readRangeParameters(nh, ranges);
+  ReadRangeParameters(nh, ranges);
 
   // Precomputed for efficiency
   const float cosTheta = cos(theta);
@@ -337,8 +328,8 @@ int main (int argc, char** argv)
 
   //================================= Subscribers/publishers =======================================
   const int queueSize = 1;
-  ros::Subscriber kinectSub = nh.subscribe("/kinect/depth/points2", queueSize, cloud_cb);
-  ros::Subscriber modeSub = nh.subscribe("/remote_monitor/mode", 1, modeCallback);
+  ros::Subscriber kinectSub = nh.subscribe("/kinect/depth/points2", queueSize, CloudCallback);
+  ros::Subscriber modeSub = nh.subscribe("/remote_monitor/mode", 1, ModeCallback);
 
   ros::Publisher rotatedCloudPub = nh.advertise<sensor_msgs::PointCloud2>("rotated_cloud", 1);
   ros::Publisher leftMarkerPub   = nh.advertise<visualization_msgs::Marker>("left_slice", 1);
@@ -488,57 +479,41 @@ int main (int argc, char** argv)
     {
       if ((mode == create_kinect::autonomous) && newData)
       {
-        geometry_msgs::Twist twist;
-        geometry_msgs::Vector3 twistLinear;
-        geometry_msgs::Vector3 twistAngular;
-
+        // If there is nothing in front go straight
         if (tCount < 1000)
         {
-          twistLinear.x = speed;
-          twistLinear.y = 0;
-          twistLinear.z = 0;
-
-          twistAngular.x = 0;
-          twistAngular.y = 0;
-          twistAngular.z = 0;
+          DriveCreate(velPub, speed, 0.0f);
         }
         else
         {
-          twistLinear.x = speed;
-          twistLinear.y = 0;
-          twistLinear.z = 0;
-
-          twistAngular.x = 0;
-          twistAngular.y = 0;
-          twistAngular.z = (float)rCount/(float)tCount - (float)lCount/(float)tCount;
+          double angular = (float)rCount/(float)tCount - (float)lCount/(float)tCount;
+          DriveCreate(velPub, speed*0.25f, angular);
         }
-
-        twist.linear  = twistLinear;
-        twist.angular = twistAngular;
-        velPub.publish(twist);
       }
       else if(mode == create_kinect::stop)
       {
-        geometry_msgs::Twist twist;
-        geometry_msgs::Vector3 twistLinear;
-        geometry_msgs::Vector3 twistAngular;
-
-        twistLinear.x = 0;
-        twistLinear.y = 0;
-        twistLinear.z = 0;
-
-        twistAngular.x = 0;
-        twistAngular.y = 0;
-        twistAngular.z = 0;
-
-        twist.linear  = twistLinear;
-        twist.angular = twistAngular;
-        velPub.publish(twist);
-
+        // If in stop mode keep send stop command
+        DriveCreate(velPub, 0.0f, 0.0f);
       }
       else if(mode == create_kinect::manual)
       {
         //Do something?
+      }
+      else if(mode == create_kinect::turnAround)
+      {
+        // Turn and then switch back to original mode
+        DriveCreate(velPub, 0.0f, 1.5f);
+
+        if (actionTimer >= 20)
+        {
+          // Stop before switching back
+          DriveCreate(velPub, 0.0f, 0.0f);
+          mode = modePrev;
+        }
+        else
+        {
+          actionTimer++;
+        }
       }
     }
   }
