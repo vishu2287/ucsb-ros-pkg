@@ -28,4 +28,5 @@
     <param name="z_min" value="0.25"/>
     <param name="z_max" value="1.0"/>
   </node>
+  
 </launch>
