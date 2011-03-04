@@ -42,9 +42,10 @@
 
 // iRobot Create control
 #include <geometry_msgs/Twist.h>
+#include <joy/Joy.h>
 
+// Rviz related
 #include <visualization_msgs/Marker.h>
-
 #include <tf/tf.h>
 
 #include <iostream>
@@ -60,9 +61,15 @@ typedef pcl::PointCloud<PointT> CloudT;
 
 sensor_msgs::PointCloud2ConstPtr cloud_, cloud_old_;
 boost::mutex m;
-unsigned char mode = create_kinect::manual;
-unsigned char modePrev = create_kinect::manual;
-unsigned actionTimer = 0;
+unsigned char mode = create_kinect::stop;
+unsigned char modePrev = create_kinect::stop;
+unsigned actionTimerCount = 0;
+
+ros::Publisher velPub; // Create publisher
+
+float linear, linearPrev;
+float angular, angularPrev;
+double l_scale_, a_scale_;
 
 struct SRanges
 {
@@ -118,10 +125,11 @@ void ModeCallback (const create_kinect::Mode m)
   }
   else if(mode == create_kinect::turnAround)
   {
-      actionTimer = 0;
+      actionTimerCount = 0;
       ROS_ERROR("Mode: Turn Around");
   }
 }
+
 
 //==================================================================================================
 //==================================================================================================
@@ -268,6 +276,48 @@ void DriveCreate(ros::Publisher& velPub, double linear, double angular)
   twist.angular = twistAngular;
   velPub.publish(twist);
 }
+
+//==================================================================================================
+//=================================================================================================
+void JoyCallback(const joy::Joy::ConstPtr& joy)
+{
+  linearPrev = linear;
+  linear = l_scale_*joy->axes[1];
+  angularPrev = angular;
+  angular = a_scale_*joy->axes[0];
+}
+
+//==================================================================================================
+//=================================================================================================
+void ActionTimerCallback(const ros::TimerEvent& e)
+{
+
+  if(mode == create_kinect::stop)
+  {
+    // If in stop mode keep send stop command
+    DriveCreate(velPub, 0.0f, 0.0f);
+  }
+  else if(mode == create_kinect::manual)
+  {
+    DriveCreate(velPub, linear*0.75f + linearPrev*0.25f, angular*0.75f + angularPrev*0.25f);
+  }
+  else if(mode == create_kinect::turnAround)
+  {
+    // Turn and then switch back to original mode
+    DriveCreate(velPub, 0.0f, 1.5f);
+
+    if (actionTimerCount >= 16)
+    {
+      // Stop before switching back
+      DriveCreate(velPub, 0.0f, 0.0f);
+      mode = modePrev;
+    }
+    else
+    {
+      actionTimerCount++;
+    }
+  }
+}
 //==================================================================================================
 // Main
 //==================================================================================================
@@ -275,14 +325,12 @@ int main (int argc, char** argv)
 {
   ros::init (argc, argv, "first_test");
   ros::NodeHandle nh;
-  ros::Publisher velPub; // Create publisher
 
   SRanges ranges;
   DefaultRanges(ranges);
 
   //Do not send commands to the Create by default
   bool enableCreate = false;
-  bool enableJoystick = false;
 
   // The raw Kinect data gets rotated about the x-axis by theta radians
   // This is essentially the measure of tilt between the ground plane and the Kinect
@@ -293,27 +341,24 @@ int main (int argc, char** argv)
 
   double val;
 
+  linear      = 0.0f;
+  linearPrev  = 0.0f;
+  angular     = 0.0f;
+  angularPrev = 0.0f;
+
+  a_scale_ = 0.75;
+  l_scale_ = 0.25;
+
+
+
   //Used for storing pointcloud from Kinect
   CloudT cloudFull;
 
   //==================================== ROS Parameters ============================================
-  if (nh.getParam("/first_test/enable_create", enableCreate))
-  {
-    if (enableCreate)
-    {
-      velPub = nh.advertise<geometry_msgs::Twist>("create_node/cmd_vel", 1);
-    }
-  }
 
-  /*
-  if (nh.getParam("/first_test/enable_joystick", enableJoystick))
-  {
-    if (enableCreate)
-    {
-      velPub = nh.advertise<geometry_msgs::Twist>("create_node/cmd_vel", 1);
-    }
-  }
-*/
+  nh.param("scale_angular", a_scale_, a_scale_);
+  nh.param("scale_linear", l_scale_, l_scale_);
+
   // Get the Kinect rotation angle
   if (nh.getParam("/first_test/theta", val)) theta = val;
 
@@ -330,12 +375,17 @@ int main (int argc, char** argv)
   const int queueSize = 1;
   ros::Subscriber kinectSub = nh.subscribe("/kinect/depth/points2", queueSize, CloudCallback);
   ros::Subscriber modeSub = nh.subscribe("/remote_monitor/mode", 1, ModeCallback);
+  ros::Subscriber joySub = nh.subscribe<joy::Joy>("joy", 2, JoyCallback);
 
   ros::Publisher rotatedCloudPub = nh.advertise<sensor_msgs::PointCloud2>("rotated_cloud", 1);
   ros::Publisher leftMarkerPub   = nh.advertise<visualization_msgs::Marker>("left_slice", 1);
   ros::Publisher rightMarkerPub  = nh.advertise<visualization_msgs::Marker>("right_slice", 1);
   ros::Publisher centPub =
     nh.advertise<create_kinect::PointStatus>("/remote_monitor/pointStatus", 1);
+
+  velPub = nh.advertise<geometry_msgs::Twist>("create_node/cmd_vel", 1);
+
+  ros::Timer actionTimer = nh.createTimer(ros::Duration(0.1), ActionTimerCallback);
 
   unsigned slowCounter = 0;
   bool newData = false;
@@ -475,45 +525,18 @@ int main (int argc, char** argv)
     }
 
     //=================================== Create Control ===========================================
-    if (enableCreate)
-    {
-      if ((mode == create_kinect::autonomous) && newData)
-      {
-        // If there is nothing in front go straight
-        if (tCount < 1000)
-        {
-          DriveCreate(velPub, speed, 0.0f);
-        }
-        else
-        {
-          double angular = (float)rCount/(float)tCount - (float)lCount/(float)tCount;
-          DriveCreate(velPub, speed*0.25f, angular);
-        }
-      }
-      else if(mode == create_kinect::stop)
-      {
-        // If in stop mode keep send stop command
-        DriveCreate(velPub, 0.0f, 0.0f);
-      }
-      else if(mode == create_kinect::manual)
-      {
-        //Do something?
-      }
-      else if(mode == create_kinect::turnAround)
-      {
-        // Turn and then switch back to original mode
-        DriveCreate(velPub, 0.0f, 1.5f);
 
-        if (actionTimer >= 20)
-        {
-          // Stop before switching back
-          DriveCreate(velPub, 0.0f, 0.0f);
-          mode = modePrev;
-        }
-        else
-        {
-          actionTimer++;
-        }
+    if ((mode == create_kinect::autonomous) && newData)
+    {
+      // If there is nothing in front go straight
+      if (tCount < 1000)
+      {
+        DriveCreate(velPub, speed, 0.0f);
+      }
+      else
+      {
+        double angular = (float)rCount/(float)tCount - (float)lCount/(float)tCount;
+        DriveCreate(velPub, speed*0.25f, angular);
       }
     }
   }
