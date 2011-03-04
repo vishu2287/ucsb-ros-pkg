@@ -1,6 +1,8 @@
 <!-- Launches the create drivers and joystick from the same machine -->
 <launch>
 
+  <param name="robot_description" command="$(find xacro)/xacro.py '$(find create_urdf)/urdf/create.urdf.xacro'" />
+
   <!-- Run the joystick node -->
   <node pkg="joy" type="joy_node" name="joystick">
     <!-- Set the joystick device name -->

@@ -3,16 +3,17 @@
 #include <geometry_msgs/Twist.h>
 #include <stdio.h>
 
+//=================================================================================================
+//=================================================================================================
 class CreateTeleop
 {
   public:
     CreateTeleop();
 
-		
   private:
-    void joyCallback(const joy::Joy::ConstPtr& joy);
- 		void sendTwist(const ros::TimerEvent& e);
- 		
+    void JoyCallback(const joy::Joy::ConstPtr& joy);
+    void SendTwist(const ros::TimerEvent& e);
+
     ros::NodeHandle nh_;
     
     float linear, linearPrev;
@@ -25,65 +26,66 @@ class CreateTeleop
     ros::Timer sendTimer;
 };
 
+//=================================================================================================
+//=================================================================================================
 CreateTeleop::CreateTeleop():
   linear_(1),
   angular_(2)
 {
-	linear      = 0.0f;
-	linearPrev  = 0.0f;
-	angular     = 0.0f;
-	angularPrev = 0.0f;
-	
-  nh_.param("axis_linear", linear_, linear_);
-  nh_.param("axis_angular", angular_, angular_);
+  linear      = 0.0f;
+  linearPrev  = 0.0f;
+  angular     = 0.0f;
+  angularPrev = 0.0f;
+
+  a_scale_ = 0.75;
+  l_scale_ = 0.25;
+
   nh_.param("scale_angular", a_scale_, a_scale_);
   nh_.param("scale_linear", l_scale_, l_scale_);
 
   vel_pub_ = nh_.advertise<geometry_msgs::Twist>("create_node/cmd_vel", 1);
 
-  joy_sub_ = nh_.subscribe<joy::Joy>("joy", 10, &CreateTeleop::joyCallback, this);
+  joy_sub_ = nh_.subscribe<joy::Joy>("joy", 10, &CreateTeleop::JoyCallback, this);
   
-  sendTimer = nh_.createTimer(ros::Duration(0.1), &CreateTeleop::sendTwist, this);
+  sendTimer = nh_.createTimer(ros::Duration(0.1), &CreateTeleop::SendTwist, this);
   
 }
-
-void CreateTeleop::joyCallback(const joy::Joy::ConstPtr& joy)
+//=================================================================================================
+//=================================================================================================
+void CreateTeleop::JoyCallback(const joy::Joy::ConstPtr& joy)
 {
-	// Read the joystick positions & reverse the x axes so the coordinates are in standard orientation
-	float y1 = 		    joy->axes[1];
-	float x1 = 1.0f * joy->axes[0];
-	float y2 = 		    joy->axes[3];
-	float x2 = 1.0f * joy->axes[2];
-
-	//printf("y1: %f x1: %f y2: %f x2: %f\n", y1, x1, y2, x2);
-	
-	linearPrev = linear;
-	linear = y1;
-	angularPrev = angular;
-	angular = x1;
-
+  linearPrev = linear;
+  linear = l_scale_*joy->axes[1];
+  angularPrev = angular;
+  angular = a_scale_*joy->axes[0];
 }
 
-void CreateTeleop::sendTwist(const ros::TimerEvent& e)
+//=================================================================================================
+//=================================================================================================
+void CreateTeleop::SendTwist(const ros::TimerEvent& e)
 {
-	geometry_msgs::Twist twist;
-	geometry_msgs::Vector3 twistLinear;
-	geometry_msgs::Vector3 twistAngular;
-	twistLinear.x = linear*0.75f + linearPrev*0.25f;
-	twistLinear.y = 0;
-	twistLinear.z = 0;
-	
-	twistAngular.x = 0;
-	twistAngular.y = 0;
-	twistAngular.z = angular*0.75f + angularPrev*0.25f;
-	
-	twist.linear = twistLinear;
-	twist.angular = twistAngular;
-	
-	vel_pub_.publish(twist);
+  geometry_msgs::Twist twist;
+  geometry_msgs::Vector3 twistLinear;
+  geometry_msgs::Vector3 twistAngular;
+
+  // Do some minor filtering
+  twistLinear.x = linear*0.75f + linearPrev*0.25f;
+  twistLinear.y = 0;
+  twistLinear.z = 0;
+
+  twistAngular.x = 0;
+  twistAngular.y = 0;
+  twistAngular.z = angular*0.75f + angularPrev*0.25f;
+
+  twist.linear = twistLinear;
+  twist.angular = twistAngular;
+
+  vel_pub_.publish(twist);
 }
 
+//=================================================================================================
 // Main
+//=================================================================================================
 int main(int argc, char** argv)
 {
   ros::init(argc, argv, "create_teleop");
