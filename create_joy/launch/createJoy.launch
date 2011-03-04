@@ -1,6 +1,8 @@
 <!-- Launches the Create node and state publisher on the machine attached to the Create -->
 <launch>
-  
+
+  <param name="robot_description" command="$(find xacro)/xacro.py '$(find create_urdf)/urdf/create.urdf.xacro'" />
+
   <!-- Create state publisher -->
   <node pkg="robot_state_publisher" type="state_publisher" name="robot_state_publisher" output="screen">
     <param name="publish_frequency" type="double" value="30.0" />
@@ -11,6 +13,8 @@
   <node pkg="create_node" type="create_node.py" name="create_node" >
     <param name="bonus" value="false" />
     <param name="~port" value="/dev/ttyUSB0" />
+    <param name="~drive_mode" value="twist" />
+    <param name="~has_gyro" value="false" />
   </node>
 
 </launch>
