@@ -69,6 +69,7 @@ class CRemoteFrame : public CRemoteFrameBase
     virtual void PressStop(wxCommandEvent& event);
     virtual void PressAutonomous(wxCommandEvent& event);
     virtual void PressManual(wxCommandEvent& event);
+    virtual void PressTurnAround(wxCommandEvent& event);
 
   private:
 
