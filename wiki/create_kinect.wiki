@@ -11,8 +11,7 @@ This first test implements a simple bump bot where the Create drives forward whi
   * [http://www.ros.org/browse/details.php?name=create_node create_node]
   * std_msgs
   * roscpp
-  * pcl
-  * pcl_ros
+  * [http://www.ros.org/wiki/pcl pcl]
   * [http://www.ros.org/wiki/geometry_msgs geometry_msgs]
 
 == Getting started ==
@@ -29,7 +28,6 @@ To run the basic test open up two command prompts and in the first run:
 roslaunch kinect_camera kinect_with_tf.launch
 }}}
 
-If you see an error then check this [http://www.ros.org/wiki/kinect/Tutorials/Getting%20Started page] to make sure everything is set up properly.  
 In the second prompt run:
 {{{
 roscd create_kinect
