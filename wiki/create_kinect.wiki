@@ -8,13 +8,12 @@ This first test implements a simple bump bot where the Create drives forward whi
 <wiki:video url="http://www.youtube.com/watch?v=pM_MExbug-s"/>
 ----
 == Dependencies ==
-  * [http://www.ros.org/wiki/create_node create_node]
+  * [http://www.ros.org/browse/details.php?name=create_node create_node]
   * std_msgs
   * roscpp
   * pcl
   * pcl_ros
-  * pcl_visualization
-  * geometry_msgs
+  * [http://www.ros.org/wiki/geometry_msgs geometry_msgs]
 
 == Getting started ==
 
