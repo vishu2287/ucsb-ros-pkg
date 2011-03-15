@@ -15,20 +15,30 @@ This first test implements a simple bump bot where the Create drives forward whi
   * [http://www.ros.org/wiki/geometry_msgs geometry_msgs]
 
 == Getting started ==
+This code is intended for the UCSB Robotics Lab Create + Kinect robot platform (or similar).  
 
-Make sure you have all of the required Kinect packages installed for ROS.  The ROS [http://www.ros.org/wiki/kinect Kinect page] is an excellent resource.  
-
-Next if you have not done so already checkout the ucsb-ros-pkg repository as instructed on the main page and build the create_kinect project:
+It is recommended that you install the full ROS Diamondback stack as instructed [http://www.ros.org/wiki/diamondback/Installation/Ubuntu here] for Ubuntu.  
 {{{
-roscd create_kinect
-rosmake
-}}}
-To run the basic test open up two command prompts and in the first run:
-{{{
-roslaunch kinect_camera kinect_with_tf.launch
+sudo apt-get install ros-diamondback-desktop-full
 }}}
 
-In the second prompt run:
+In addition you will need the joystick-drivers stack
+{{{
+sudo apt-get install ros-diamondback-joystick-drivers
+}}}
+
+And the Kinect drivers
+{{{
+sudo apt-get install ros-diamondback-openni-kinect
+}}}
+The ROS [http://www.ros.org/wiki/kinect Kinect page] is an excellent resource for drivers and Kinect tutorials.  
+
+To run this package locally ensure that the Create and Kinect are connected and in one prompt run
+{{{
+roslaunch openni_camera openni_node.launch
+}}}
+
+In a second prompt run:
 {{{
 roscd create_kinect
 roslaunch ./launch/firstTest.launch
