@@ -9,8 +9,9 @@ This first test implements a simple bump bot where the Create drives forward whi
 ----
 == Dependencies ==
   * [http://www.ros.org/browse/details.php?name=create_node create_node]
-  * std_msgs
-  * roscpp
+  * [http://www.ros.org/wiki/std_msgs std_msgs] 
+  * [http://www.ros.org/wiki/roscpp roscpp]
+  * [http://www.ros.org/wiki/visualization_msgs visualization_msgs] 
   * [http://www.ros.org/wiki/pcl pcl]
   * [http://www.ros.org/wiki/geometry_msgs geometry_msgs]
 
@@ -27,7 +28,7 @@ In addition you will need the joystick-drivers stack
 sudo apt-get install ros-diamondback-joystick-drivers
 }}}
 
-And the Kinect drivers
+And the OpenNI Kinect drivers
 {{{
 sudo apt-get install ros-diamondback-openni-kinect
 }}}
@@ -38,10 +39,16 @@ To run this package locally ensure that the Create and Kinect are connected and 
 roslaunch openni_camera openni_node.launch
 }}}
 
-In a second prompt run:
+In another prompt run:
 {{{
 roscd create_kinect
 roslaunch ./launch/firstTest.launch
+}}}
+
+Now on a separate machine on the same network set the ROS_MASTER_URI environment variable accordingly (see [http://www.ros.org/wiki/ROS/Tutorials/MultipleMachines this] for additional details) 
+{{{
+roscd create_kinect
+roslaunch ./launch/remoteMonitor.launch
 }}}
 
 == Launch files ==
