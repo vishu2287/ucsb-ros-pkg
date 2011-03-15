@@ -31,9 +31,9 @@ And the Kinect drivers
 {{{
 sudo apt-get install ros-diamondback-openni-kinect
 }}}
-The ROS [http://www.ros.org/wiki/kinect Kinect page] is an excellent resource for drivers and Kinect tutorials.  
+The ROS [http://www.ros.org/wiki/kinect Kinect page] is an excellent starting point and the [http://www.ros.org/wiki/openni_camera OpenNI camera page] is a.  
 
-To run this package locally ensure that the Create and Kinect are connected and in one prompt run
+To run this package locally ensure that the Create and Kinect are connected and in a prompt run
 {{{
 roslaunch openni_camera openni_node.launch
 }}}
