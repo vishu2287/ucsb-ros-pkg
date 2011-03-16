@@ -14,12 +14,11 @@ class CreateTeleop
     void JoyCallback(const joy::Joy::ConstPtr& joy);
     void SendTwist(const ros::TimerEvent& e);
 
-    ros::NodeHandle nh_;
+    ros::NodeHandle nh;
     
     float linear, linearPrev;
     float angular, angularPrev;
 
-    int linear_, angular_;
     double l_scale_, a_scale_;
     ros::Publisher vel_pub_;
     ros::Subscriber joy_sub_;
@@ -28,9 +27,7 @@ class CreateTeleop
 
 //=================================================================================================
 //=================================================================================================
-CreateTeleop::CreateTeleop():
-  linear_(1),
-  angular_(2)
+CreateTeleop::CreateTeleop()
 {
   linear      = 0.0f;
   linearPrev  = 0.0f;
@@ -40,14 +37,14 @@ CreateTeleop::CreateTeleop():
   a_scale_ = 0.75;
   l_scale_ = 0.25;
 
-  nh_.param("scale_angular", a_scale_, a_scale_);
-  nh_.param("scale_linear", l_scale_, l_scale_);
+  nh.param("scale_angular", a_scale_, a_scale_);
+  nh.param("scale_linear", l_scale_, l_scale_);
 
-  vel_pub_ = nh_.advertise<geometry_msgs::Twist>("create_node/cmd_vel", 1);
+  vel_pub_ = nh.advertise<geometry_msgs::Twist>("create_node/cmd_vel", 1);
 
-  joy_sub_ = nh_.subscribe<joy::Joy>("joy", 10, &CreateTeleop::JoyCallback, this);
+  joy_sub_ = nh.subscribe<joy::Joy>("joy", 10, &CreateTeleop::JoyCallback, this);
   
-  sendTimer = nh_.createTimer(ros::Duration(0.1), &CreateTeleop::SendTwist, this);
+  sendTimer = nh.createTimer(ros::Duration(0.1), &CreateTeleop::SendTwist, this);
   
 }
 //=================================================================================================
@@ -65,20 +62,10 @@ void CreateTeleop::JoyCallback(const joy::Joy::ConstPtr& joy)
 void CreateTeleop::SendTwist(const ros::TimerEvent& e)
 {
   geometry_msgs::Twist twist;
-  geometry_msgs::Vector3 twistLinear;
-  geometry_msgs::Vector3 twistAngular;
 
-  // Do some minor filtering
-  twistLinear.x = linear*0.75f + linearPrev*0.25f;
-  twistLinear.y = 0;
-  twistLinear.z = 0;
-
-  twistAngular.x = 0;
-  twistAngular.y = 0;
-  twistAngular.z = angular*0.75f + angularPrev*0.25f;
-
-  twist.linear = twistLinear;
-  twist.angular = twistAngular;
+  // Do some minor filtering as well
+  twist.linear.x = linear*0.75f + linearPrev*0.25f;
+  twist.angular.z = angular*0.75f + angularPrev*0.25f;
 
   vel_pub_.publish(twist);
 }
