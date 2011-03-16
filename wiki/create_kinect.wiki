@@ -34,6 +34,13 @@ sudo apt-get install ros-diamondback-openni-kinect
 }}}
 The ROS [http://www.ros.org/wiki/kinect Kinect page] is an excellent starting point and the [http://www.ros.org/wiki/openni_camera OpenNI camera page] explains a lot of useful features.
 
+To install the iRobot Create drivers run the following commands
+{{{
+cd ~
+svn co https://code.ros.org/svn/ros-pkg/branches/trunk_cturtle/stacks/create_robot/ create_robot
+export ROS_PACKAGE_PATH=:~/create_robot:$ROS_PACKAGE_PATH
+}}}
+
 To run this package locally ensure that the Create and Kinect are connected and in a prompt run
 {{{
 roslaunch openni_camera openni_node.launch
