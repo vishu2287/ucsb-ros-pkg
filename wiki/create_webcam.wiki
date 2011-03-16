@@ -7,12 +7,11 @@ This package enables users to remotely view/transmit webcam images and control a
 
 == Dependencies ==
   * [http://www.ros.org/wiki/create_node create_node]
-  * image_transport
-  * opencv2
-  * cv_bridge
-  * create_node
-  * joy
-  * teleop
+  * [http://www.ros.org/wiki/image_transport image_transport]
+  * [http://www.ros.org/wiki/opencv2 opencv2]
+  * [http://www.ros.org/wiki/cv_bridge cv_bridge]
+  * [http://www.ros.org/browse/details.php?name=create_node create_node]
+  * [http://www.ros.org/wiki/joy joy]
 
 == Getting started ==
 {{{
