@@ -35,10 +35,8 @@
 #include <boost/thread/mutex.hpp>
 
 // PCL includes
-#include <pcl/io/io.h>
-#include <pcl/io/pcd_io.h>
+#include <pcl_ros/point_cloud.h>
 #include <pcl/point_types.h>
-#include <pcl_ros/subscriber.h>
 
 // iRobot Create control
 #include <geometry_msgs/Twist.h>
@@ -47,6 +45,8 @@
 // Rviz related
 #include <visualization_msgs/Marker.h>
 #include <tf/tf.h>
+#include <tf/transform_broadcaster.h>
+#include <tf/transform_listener.h>
 
 #include <iostream>
 #include <sstream>
@@ -69,7 +69,7 @@ ros::Publisher velPub; // Create publisher
 
 float linear, linearPrev;
 float angular, angularPrev;
-double l_scale_, a_scale_;
+double linScale, angScale;
 
 struct SRanges
 {
@@ -113,20 +113,20 @@ void ModeCallback (const create_kinect::Mode m)
 
   if(mode == create_kinect::autonomous)
   {
-    ROS_ERROR("Mode: Autonomous");
+      ROS_INFO("Mode: Autonomous");
   }
   else if(mode == create_kinect::stop)
   {
-      ROS_ERROR("Mode: Stop");
+      ROS_INFO("Mode: Stop");
   }
   else if(mode == create_kinect::manual)
   {
-      ROS_ERROR("Mode: Manual");
+      ROS_INFO("Mode: Manual");
   }
   else if(mode == create_kinect::turnAround)
   {
       actionTimerCount = 0;
-      ROS_ERROR("Mode: Turn Around");
+      ROS_INFO("Mode: Turn Around");
   }
 }
 
@@ -175,7 +175,7 @@ void PublishBoundMarker(
 
   visualization_msgs::Marker m;
 
-  m.header.frame_id = "world";
+  m.header.frame_id = "/openni_rgb_optical_frame";
   m.header.stamp = ros::Time::now();
   m.ns = "bounds";
   m.id = id;
@@ -282,9 +282,9 @@ void DriveCreate(ros::Publisher& velPub, double linear, double angular)
 void JoyCallback(const joy::Joy::ConstPtr& joy)
 {
   linearPrev = linear;
-  linear = l_scale_*joy->axes[1];
+  linear = linScale*joy->axes[1];
   angularPrev = angular;
-  angular = a_scale_*joy->axes[0];
+  angular = angScale*joy->axes[0];
 }
 
 //==================================================================================================
@@ -346,18 +346,16 @@ int main (int argc, char** argv)
   angular     = 0.0f;
   angularPrev = 0.0f;
 
-  a_scale_ = 0.75;
-  l_scale_ = 0.25;
-
-
+  angScale = 0.75;
+  linScale = 0.25;
 
   //Used for storing pointcloud from Kinect
   CloudT cloudFull;
 
   //==================================== ROS Parameters ============================================
 
-  nh.param("scale_angular", a_scale_, a_scale_);
-  nh.param("scale_linear", l_scale_, l_scale_);
+  nh.param("scale_angular", angScale, angScale);
+  nh.param("scale_linear", linScale, linScale);
 
   // Get the Kinect rotation angle
   if (nh.getParam("/first_test/theta", val)) theta = val;
@@ -372,8 +370,7 @@ int main (int argc, char** argv)
   const float sinTheta = sin(theta);
 
   //================================= Subscribers/publishers =======================================
-  const int queueSize = 1;
-  ros::Subscriber kinectSub = nh.subscribe("/kinect/depth/points2", queueSize, CloudCallback);
+  ros::Subscriber kinectSub = nh.subscribe("/camera/rgb/points", 1, CloudCallback);
   ros::Subscriber modeSub = nh.subscribe("/remote_monitor/mode", 1, ModeCallback);
   ros::Subscriber joySub = nh.subscribe<joy::Joy>("joy", 2, JoyCallback);
 
@@ -395,6 +392,13 @@ int main (int argc, char** argv)
   {
     ros::spinOnce();
     ros::Duration(0.1).sleep();
+
+
+    //Define the TF
+    static tf::TransformBroadcaster br;
+
+    tf::Transform transform;
+
 
     // Do this up to once a second
     if (slowCounter >= 9)
@@ -418,8 +422,6 @@ int main (int argc, char** argv)
     }
 
     CloudT rotatedCloud;
-    CloudT leftBlock;
-    CloudT rightBlock;
 
     int lCount = 0;
     int rCount = 0;
@@ -469,7 +471,6 @@ int main (int argc, char** argv)
               lAvgX += x;
               lAvgY += y;
               lAvgZ += z;
-              leftBlock.push_back(point);
               lCount++;
             }
 
@@ -478,7 +479,6 @@ int main (int argc, char** argv)
               rAvgX += x;
               rAvgY += y;
               rAvgZ += z;
-              rightBlock.push_back(point);
               rCount++;
             }
           }
@@ -518,7 +518,16 @@ int main (int argc, char** argv)
 
       pcl::toROSMsg(rotatedCloud, rotatedCloudMsg);
 
-      rotatedCloudMsg.header.frame_id = "world";
+      transform.setOrigin(tf::Vector3(10.0,0.0,0.0));
+
+      tf::StampedTransform trans =
+        tf::StampedTransform(transform, ros::Time::now(),
+        "/base_footprint",
+        "/openni_camera");
+
+      br.sendTransform(trans);
+
+      rotatedCloudMsg.header.frame_id = "/openni_rgb_optical_frame";
       rotatedCloudMsg.header.stamp = ros::Time::now();
 
       rotatedCloudPub.publish(rotatedCloudMsg);
