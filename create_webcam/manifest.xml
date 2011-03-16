@@ -13,7 +13,6 @@ This package enables users to remotely view/transmit webcam images and control a
   <depend package="cv_bridge"/>
   <depend package="create_node"/>
   <depend package="joy"/>
-  <depend package="teleop"/>
   <depend package="create_joy"/>
 
 </package>
