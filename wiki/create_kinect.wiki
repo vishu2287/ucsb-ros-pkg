@@ -38,7 +38,7 @@ To run this package locally ensure that the Create and Kinect are connected and 
 {{{
 roslaunch openni_camera openni_node.launch
 }}}
-You should see a print statement that says the OpenNI driver is connect to 1 device.  After that the Kinect drivers are running run
+You should see a print statement _[/openni_node1] Number devices connected: 1_.  After that the Kinect drivers are running run
 {{{
 roscd create_kinect
 roslaunch ./launch/firstTest.launch
