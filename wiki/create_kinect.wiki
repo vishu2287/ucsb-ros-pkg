@@ -16,37 +16,29 @@ This first test implements a simple bump bot where the Create drives forward whi
   * [http://www.ros.org/wiki/geometry_msgs geometry_msgs]
 
 == Getting started ==
-This code is intended for the UCSB Robotics Lab Create + Kinect robot platform (or similar).  
-
-It is recommended that you install the full ROS Diamondback stack as instructed [http://www.ros.org/wiki/diamondback/Installation/Ubuntu here] for Ubuntu.  
+This code is intended for the UCSB Robotics Lab Create + Kinect robot platform (or similar).  It is recommended that you install the full ROS Diamondback stack as instructed [http://www.ros.org/wiki/diamondback/Installation/Ubuntu here] for Ubuntu.
 {{{
 sudo apt-get install ros-diamondback-desktop-full
 }}}
-
 In addition you will need the joystick-drivers stack
 {{{
 sudo apt-get install ros-diamondback-joystick-drivers
 }}}
-
 And the OpenNI Kinect drivers
 {{{
 sudo apt-get install ros-diamondback-openni-kinect
 }}}
-The ROS [http://www.ros.org/wiki/kinect Kinect page] is an excellent starting point and the [http://www.ros.org/wiki/openni_camera OpenNI camera page] explains a lot of useful features.
-
-To install the iRobot Create drivers run the following commands
+The ROS [http://www.ros.org/wiki/kinect Kinect page] is an excellent starting point and the [http://www.ros.org/wiki/openni_camera OpenNI camera page] explains a lot of useful features.  To install the iRobot Create drivers run the following commands
 {{{
 cd ~
 svn co https://code.ros.org/svn/ros-pkg/branches/trunk_cturtle/stacks/create_robot/ create_robot
 export ROS_PACKAGE_PATH=:~/create_robot:$ROS_PACKAGE_PATH
 }}}
-
 To run this package locally ensure that the Create and Kinect are connected and in a prompt run
 {{{
 roslaunch openni_camera openni_node.launch
 }}}
-
-In another prompt run:
+You should see a print statement that says the OpenNI driver is connect to 1 device.  After that the Kinect drivers are running run
 {{{
 roscd create_kinect
 roslaunch ./launch/firstTest.launch
@@ -57,6 +49,7 @@ Now on a separate machine on the same network set the ROS_MASTER_URI environment
 roscd create_kinect
 roslaunch ./launch/remoteMonitor.launch
 }}}
+The remote monitor is used for switching between autonomous and manual mode as well as stopping the robot when needed.  
 
 == Launch files ==
  * *firstTest.launch* - Launch a basic bump bot first test with the Kinect mounted on the Create
