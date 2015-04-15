@@ -1,0 +1,2 @@
+## UCSB Robotics Lab Create + Kinect Platform ##
+For the most part we followed [this](http://www.ros.org/wiki/kinect/Tutorials/Adding%20a%20Kinect%20to%20an%20iRobot%20Create) tutorial.  Instead of a linear regulator we used a switching regulator module, [78SR112HC](http://focus.ti.com/docs/prod/folders/print/78sr112.html) purchased from [DigiKey](http://search.digikey.com/scripts/DkSearch/dksus.dll?Detail&name=78SR112HC-ND).
